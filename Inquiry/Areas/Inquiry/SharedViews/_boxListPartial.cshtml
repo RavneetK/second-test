@@ -1,0 +1,59 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.SharedViews.IBoxListViewModel
+<ul class="list-group">
+    @for (var i = 0; i < Model.AllBoxes.Count; ++i)
+    {
+        <li class="list-group-item">
+            <div class="row">
+                <div class="col-md-4">
+                    @(i + 1)
+                    <a href="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.Box(Model.AllBoxes[i].Ucc128Id))" class="btn  btn-lg">
+                        @Model.AllBoxes[i].Ucc128Id
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    @if (Model.ShowPickslipLinks)
+                    {
+                        <a href="@Url.Action(MVC_Inquiry.Inquiry.PickslipEntity.Wave(Model.AllBoxes[i].BucketId))" class="btn btn-default btn-sm">Pick Wave @Html.DisplayFor(m => m.AllBoxes[i].BucketId)</a>
+                        <a href="@Url.Action(MVC_Inquiry.Inquiry.PickslipEntity.Pickslip(Model.AllBoxes[i].PickslipId))" class="btn btn-default btn-sm">Pickslip @Html.DisplayFor(m => m.AllBoxes[i].PickslipId)</a>
+                    }
+                </div>
+
+                <div class="col-md-4">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="@(Model.AllBoxes[i].CurrentPieces ?? 0)" aria-valuemin="0" aria-valuemax="100" style="width: @Model.AllBoxes[i].PctPiecesPicked%;">
+                            @Html.DisplayFor(m => m.AllBoxes[i].DisplayPieces) pieces
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <a href="@Url.Action(MVC_Inquiry.Inquiry.CustomerEntity.Customer(Model.AllBoxes[i].CustomerId))">@Html.DisplayFor(m => m.AllBoxes[i].CustomerId)</a>
+                    @Html.DisplayFor(m => m.AllBoxes[i].CustomerName)
+                </div>
+                <div class="col-md-4">
+                    Picked by @Html.DisplayFor(m => m.AllBoxes[i].MinPickerName) on @Html.DisplayFor(m => m.AllBoxes[i].PitchDate). Labels Printed @Html.DisplayFor(m => m.AllBoxes[i].LastLabelPrintDate)
+                </div>
+                <div class="col-md-4">
+                    @if (@Model.AllBoxes[i].StopProcessReason == "$BOXCANCEL")
+                    {
+                        <p>Cancelled @Html.DisplayFor(m => m.AllBoxes[i].StopProcessDate)</p>
+                    }
+                    else if (Model.AllBoxes[i].ValidationDate.HasValue)
+                    {
+                        <p class="bg-success">Validated @Html.DisplayFor(m => m.AllBoxes[i].ValidationDate)</p>
+                    }
+                    else if (Model.AllBoxes[i].PitchDate.HasValue)
+                    {
+                        <p class="bg-success">Pitched @Html.DisplayFor(m => m.AllBoxes[i].PitchDate)</p>
+                    }
+                    else if (Model.AllBoxes[i].TruckLoadDate.HasValue)
+                    {
+                        <p class="bg-success">Loaded @Html.DisplayFor(m => m.AllBoxes[i].TruckLoadDate)</p>
+                    }
+                </div>
+            </div>
+        </li>
+    }
+</ul>

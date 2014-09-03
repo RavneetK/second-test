@@ -1,0 +1,7 @@
+C:\work\DcmsMobile\EclipseLibrary.Oracle\bin\Debug\EclipseLibrary.Oracle.XML
+C:\work\DcmsMobile\EclipseLibrary.Oracle\bin\Debug\EclipseLibrary.Oracle.dll
+C:\work\DcmsMobile\EclipseLibrary.Oracle\bin\Debug\EclipseLibrary.Oracle.pdb
+C:\work\DcmsMobile\EclipseLibrary.Oracle\bin\Debug\Oracle.ManagedDataAccess.dll
+C:\work\DcmsMobile\EclipseLibrary.Oracle\obj\Debug\EclipseLibrary.Oracle.csprojResolveAssemblyReference.cache
+C:\work\DcmsMobile\EclipseLibrary.Oracle\obj\Debug\EclipseLibrary.Oracle.dll
+C:\work\DcmsMobile\EclipseLibrary.Oracle\obj\Debug\EclipseLibrary.Oracle.pdb

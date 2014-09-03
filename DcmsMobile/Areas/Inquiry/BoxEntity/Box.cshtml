@@ -1,0 +1,431 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxViewModel
+@{
+    var hasEpc = Model.SkuWithEpc.Any(p => p.AllEpc.Any());
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+    ViewBag.Title = string.Format("Box {0}", Model.Ucc128Id);
+}
+}
+@section script {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#btnPrintBox").click(function () {
+                if ($('input:checkbox:checked', '#frmMain').length === 0) {
+                    alert("Select label to print");
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+@helper CancelBoxToolTip()
+{
+    switch (Model.StopProcessReason)
+    {
+        case DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Active:
+            break;
+
+        case DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Cancelled:
+            @Html.Raw("This box has already been cancelled. There is no mechanism to uncancel it")
+            break;
+
+        case DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Transferred:
+        @Html.Raw("This box has already been shipped and therefore it cannot be cancelled")
+            break;
+    }
+}
+
+<div class="container">
+    <div class="page-header">
+        <h1>
+            @if (Model.StopProcessReason == DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Cancelled)
+            {
+                <s> Box @Html.DisplayFor(m => m.Ucc128Id)</s>
+            }
+            else
+            {
+                <span>Box @Html.DisplayFor(m => m.Ucc128Id)</span>
+            }
+            <small>
+                Pickslip
+                <a href="@Url.Action(MVC_Inquiry.Inquiry.PickslipEntity.Pickslip(Model.PickslipId))">@Model.PickslipId</a>
+            </small>
+            @if (Model.AuditList.Count > 0 || Model.SkuWithEpc.Count > 0)
+            {
+                <a class="btn btn-sm" href="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.BoxExcel(Model.Ucc128Id))">
+                    <span class="glyphicon glyphicon-export"></span> Excel
+                </a>
+            }
+        </h1>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="progress">
+                @if (Model.PitchingEndDate.HasValue)
+                {
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                        Pitched
+                        @Html.DisplayFor(m => m.PitchingEndDate)
+                        @if (!string.IsNullOrWhiteSpace(Model.PickerNames))
+                        {
+                            <span>by @Html.DisplayFor(m => m.PickerNames)</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                        Not Pitched
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            @if (Model.QcDate.HasValue)
+            {
+                <div>
+                    Quality Check
+                    @Html.DisplayFor(m => m.QcDate)
+                    @if (!string.IsNullOrWhiteSpace(Model.RejectionCode))
+                    {
+                        <em>Rejected: @Html.DisplayFor(m => m.RejectionCode)</em>
+                    }
+
+                </div>
+            }
+            <div class="progress">
+                @if (Model.ValidationDate.HasValue)
+                {
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                        Validated
+                        @Html.DisplayFor(m => m.ValidationDate)
+                    </div>
+                }
+                else
+                {
+                    <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                        Not Validated
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="progress">
+                @if (Model.StopProcessReason == DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Active)
+                {
+                    if (Model.SuspenseDate.HasValue)
+                    {
+                        <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                            Suspense Date
+                            @Html.DisplayFor(m => m.SuspenseDate)
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                            Not sent to ERP
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                        @if (Model.StopProcessReason == DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Cancelled)
+                        {
+                            <text> Cancelled</text>
+                        }
+                        else if (Model.StopProcessReason == DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxStatus.Transferred)
+                        {
+                            <text> Sent to ERP</text>
+                        }
+                        @Html.DisplayFor(m => m.StopProcessDate)
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    @Html.ActionLink(Model.CustomerDisplayName, MVC_Inquiry.Inquiry.CustomerEntity.Customer(Model.CustomerId))
+                    &bull; <abbr title="Distribution Center">DC</abbr> @Html.DisplayFor(m => m.CustomerDc) &bull; Store @Html.DisplayFor(m => m.CustomerStore)
+                </div>
+                <div class="panel-body">
+                    <address>
+                        @foreach (var line in Model.ToAddressLines)
+                        {
+                            @line
+                            <br />
+                        }
+                        @Model.City, @Model.State
+                    </address>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <dl class="dl-horizontal">
+                        <dt>Area</dt>
+                        <dd>
+                            @Html.DisplayFor(m => m.Building) <a href="@Url.Action(MVC_Inquiry.Inquiry.SkuAreaEntity.SKUArea(Model.IaId))">
+                                @Html.DisplayFor(m => m.AreaShortName) @Html.DisplayFor(m => m.IaShortDescription)
+                            </a>
+                        </dd>
+                        <dt>Pallet</dt>
+                        <dd>
+                            <div class="btn-group">
+                                @if (!string.IsNullOrEmpty(Model.PalletId))
+                                {
+                                    <a href="@MVC_Inquiry.Inquiry.BoxEntity.BoxPallet(Model.PalletId)" class="btn">
+                                        @Html.DisplayFor(m => m.PalletId)
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="btn">Not on Pallet</span>
+                                }
+                                <button type="button" class="btn dropdown-toggle" data-toggle="dropdown">
+                                    <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li><a href="@Model.UrlScanToPallet"><span class="glyphicon glyphicon-new-window"></span> Scan To Pallet</a></li>
+                                </ul>
+                            </div>
+                        </dd>
+                        @if (!string.IsNullOrWhiteSpace(Model.CartonId))
+                        {
+                            <dt>Carton</dt>
+                            <dd>
+                                <a href="@Url.Action(MVC_Inquiry.Inquiry.CartonEntity.Carton(Model.CartonId))">@Html.DisplayFor(m => m.CartonId)</a>
+                            </dd>
+                        }
+                        <dt>
+                            Tracking Number
+                        </dt>
+                        <dd>
+                            @Html.DisplayFor(m => m.ProNo)
+                        </dd>
+                        @for (var i = 0; i < Model.VasStatusList.Count; ++i)
+                        {
+                            <dt>@Html.DisplayFor(m => m.VasStatusList[i].VasDescription)</dt>
+                            <dd>
+                                @if (Model.VasStatusList[i].IsComplete)
+                                {
+                                    <span class="glyphicon glyphicon-ok"></span> <span>Completed</span>
+                                }
+                                else
+                                {
+                                    <span>Not Complete</span>
+                                }
+
+                                @if (!Model.VasStatusList[i].IsRequired)
+                                {
+                                    <span><small>Not Required</small></span>
+                                }
+                            </dd>
+                        }
+                        <dt>RFID</dt>
+                        <dd>
+                            @(Model.RfidTagsRequired ? "Required" : "Not required")
+                        </dd>
+                    </dl>
+                    <a href="@Model.UrlManageVas"><span class="glyphicon glyphicon-new-window"></span> Manage VAS</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <a href="#printControls" data-toggle="collapse"><span class="glyphicon glyphicon-plus"></span> Print Labels</a>
+                </div>
+                <div id="printControls" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <form role="form" action="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.PrintBoxUccOrCcl())" id="frmMain" method="post">
+                            <input type="hidden" name="@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxUccOrCclParams.ucc128Id"
+                                   value="@Model.Ucc128Id" />
+                            <div class="checkbox">
+                                <label class="checkbox-inline1">
+                                    <input type="checkbox" id="printCatalog" name='@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxUccOrCclParams.printCatalog' value="true" @Html.Raw(Model.CanPrintCatalog ? "" : "disabled") /> Catalog
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label class="checkbox-inline1">
+                                    <input type="checkbox" name="@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxUccOrCclParams.printUcc" value="true" id="cbPrintUcc" /> UCC
+                                    <small>Printed @Html.DisplayFor(m => m.LastUccPrintedDate) @Html.DisplayFor(m => m.LastUccPrintedBy)</small>
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label class="checkbox-inline1">
+                                    <input type="checkbox" name='@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxUccOrCclParams.printCcl' value="true" id="cbPrintCcl" /> CCL
+                                    <small>Printed @Html.DisplayFor(m => m.LastCclPrintedDate) @Html.DisplayFor(m => m.LastCclPrintedBy)</small>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Printer</label>
+                                @Html.DropDownListFor(m => m.PrinterId, Model.PrinterList, "Printer...", new
+                    {
+                        id = "ddlPrinter",
+                        required = "required",
+                        name = MVC_Inquiry.Inquiry.BoxEntity.PrintBoxUccOrCclParams.printerId,
+                        @class = "form-control"
+                    })
+                            </div>
+                            <div class="form-group">
+                                <button id="btnPrintBox" class="btn btn-primary" type="submit">Print</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="panel-footer">
+                    <div class="btn-group" title="@CancelBoxToolTip()">
+                        <button type="button" class="btn btn-primary dropdown-toggle btn-sm" data-toggle="dropdown"
+                                @(Model.StopProcessDate.HasValue ? "disabled" : "")>
+                            Cancel Box <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            @if (Model.CanCancelBox)
+                            {
+                                <li>
+                                    <form action="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.CancelBox())" method="post">
+                                        <input type="hidden" value="@Model.Ucc128Id" name="@MVC_Inquiry.Inquiry.BoxEntity.CancelBoxParams.id" />
+                                        <button class="btn btn-default btn-block" type="submit">Yes</button>
+                                    </form>
+                                </li>
+                                <li><a class="btn btn-default">No</a></li>
+                            }
+                            else
+                            {
+                                <li><a href="@Model.UrlLogin">Login with Role @Html.DisplayFor(m => m.ManagerRoleName)</a></li>
+                            }
+                        </ul>
+                    </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-condensed">
+            <caption class="h4">
+                    SKUs in Box &bull; <abbr title="Virtual Warehouse">VWh</abbr> @Html.DisplayFor(m => m.VwhId)
+
+            </caption>
+            <thead>
+                <tr>
+                    <th style="text-align:center">#</th>
+                    <th style="text-align:center">
+                        SKU <span class="glyphicon glyphicon-sort-by-attributes"></span>
+                    </th>
+                    <th style="text-align:center">Price($)</th>
+                    <th style="text-align:center">Pieces</th>
+                    @if (hasEpc)
+                    {
+                        <th style="text-align:center">EPC</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.SkuWithEpc.Count; ++i)
+                {
+                    <tr>
+                        <td style="text-align:right">
+                            @(i + 1)
+                        </td>
+                        <td>
+                            @Html.ActionLink(Model.SkuWithEpc[i].DisplaySku, MVC_Inquiry.Inquiry.SkuEntity.Sku(Model.SkuWithEpc[i].SkuId))
+                        </td>
+                        <td style="text-align:right">
+                            @Model.SkuWithEpc[i].ExtendedPrice
+                        </td>
+                        <td style="text-align:right">
+                            @Model.SkuWithEpc[i].DisplayPieces
+                        </td>
+                        @if (hasEpc)
+                        {
+                            <td>
+                                <ol>
+                                    @for (var j = 0; j < Model.SkuWithEpc[i].AllEpc.Count; j++)
+                                    {
+                                        <li>@Html.DisplayFor(m => m.SkuWithEpc[i].AllEpc[j])</li>
+                                    }
+                                </ol>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="success">
+                    <td>Total</td>
+                    <td></td>
+                    <td></td>
+                    <td style="text-align:right">
+                        @Model.SkuWithEpc.Sum(m => m.Pieces)<span> of </span> @Model.SkuWithEpc.Sum(m => m.ExpectedPieces)
+                    </td>
+                    @if (hasEpc)
+                    {
+                        <td></td>
+                    }
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-condensed">
+            <caption><h4>Box Audit</h4></caption>
+            <thead>
+                <tr>
+                    <th style="text-align:center">Action</th>
+                    <th style="text-align:center">
+                        Date <span class="glyphicon glyphicon-sort-by-attributes-alt"></span>
+                    </th>
+                    <th style="text-align:center">Operator</th>
+                    <th style="text-align:center">Module</th>
+                    <th style="text-align:center">QC Rejection Code</th>
+                    <th style="text-align:center" colspan="2" data-priority="5">Area</th>
+                    <th style="text-align:center" colspan="2" data-priority="6">Location</th>
+                    <th style="text-align:center" colspan="2" data-priority="7">Pallet</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th style="text-align:center">From</th>
+                    <th style="text-align:center">To</th>
+                    <th style="text-align:center">From</th>
+                    <th style="text-align:center">To</th>
+                    <th style="text-align:center">From</th>
+                    <th>To</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.AuditList)
+                {
+                    <tr>
+                        <td> @item.ActionPerformed</td>
+                        <td>@item.DateCreated</td>
+                        <td>@item.CreatedBy</td>
+                        <td>@item.ModuleCode</td>
+                        <td>@item.RejectionCode</td>
+                        <td>@item.FromIaId</td>
+                        <td>@item.ToIaId</td>
+                        <td>@item.FromLocation</td>
+                        <td>@item.ToLocation</td>
+                        <td>@item.FromPallet</td>
+                        <td>@item.ToPallet</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

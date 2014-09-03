@@ -1,0 +1,114 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.CartonEntity.CartonPalletViewModel
+@{
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+    // var rowIndex = 0;
+}
+
+<div class="container">
+    <div class="page-header">
+        <h2>
+            <img src="@Links_Inquiry.Areas.Inquiry.CartonEntity.Pallet_jpg" />
+            Pallet @Html.DisplayFor(m => m.PalletId) <small>Building @Html.DisplayFor(m => m.BuildingId)</small>
+
+            <a class="btn btn-sm" href="@Url.Action(MVC_Inquiry.Inquiry.CartonEntity.CartonPalletExcel(Model.PalletId))">
+                <span class="glyphicon glyphicon-export"></span> Excel
+            </a>
+            <small>
+                <button class="btn btn-link pull-right" data-toggle="modal" data-target="#reportPopUp">
+                    <span class="glyphicon glyphicon-pushpin"></span> Programs
+                </button>
+            </small>
+        </h2>
+    </div>
+
+    @if (Model.AreaCount == 1)
+    {
+        <div>
+            Area @Html.DisplayFor(m => m.AreaList)
+        </div>
+    }
+    else
+    {
+        <div>
+            Pallet contains cartons from multiple areas @Html.DisplayFor(m => m.AreaList). Please verify the area of each carton. Red alert.
+        </div>
+    }
+    <div>
+        Similar multiple location logic. Also multiple restock aisle logic.
+        <br />
+        TODO: Pallet created between min area change date and max area change date.
+    </div>
+    Area @Html.DisplayFor(m => m.AreaList)
+    Count @Html.DisplayFor(m => m.AreaCount)
+    @*<div class="well well-sm">
+            @Html.DisplayFor(m => m.TotalCartons) cartons containing @Html.DisplayFor(m => m.TotalPieces) pieces
+        </div>*@
+
+    <h3>@Html.DisplayFor(m => m.TotalCartons) Cartons on Pallet containing @Html.DisplayFor(m => m.TotalPieces) pieces</h3>
+
+
+    <ul class="list-group">
+        @for (var i = 0; i < Model.AllCartons.Count; ++i)
+        {
+            <li class="list-group-item">
+                <span class="badge">@Html.DisplayFor(m => m.AllCartons[i].Pieces) pieces</span>
+                <span class="h3"><a href="@Url.Action(MVC_Inquiry.Inquiry.CartonEntity.Carton(Model.AllCartons[i].CartonId))"> @Html.DisplayFor(m => m.AllCartons[i].CartonId)</a></span>
+                <a href="@Url.Action(MVC_Inquiry.Inquiry.SkuEntity.Sku(Model.AllCartons[i].SkuId ?? 0))" class="btn">SKU @Html.DisplayFor(m => m.AllCartons[i].DisplaySkuVwh)</a>
+                @if (Model.AreaCount > 1)
+                {
+                    <span class="text-danger">At Location @Html.DisplayFor(m => m.AllCartons[i].LocationId) in Area BIR</span>
+                }
+                <div>
+                    @if (Model.AllCartons[i].ReqProcessId.HasValue)
+                    {
+                        <span class="label label-info">Reserved for Request# @Html.DisplayFor(m => m.AllCartons[i].ReqProcessId)</span>
+                    }
+                    @if (!Model.AllCartons[i].IsShippableQuality)
+                    {
+                        <span class="label label-danger">Quality @Html.DisplayFor(m => m.AllCartons[i].QualityCode) is not shippable</span>
+                    }
+                </div>
+            </li>
+        }
+    </ul>
+
+
+
+    @Html.Partial(MVC_Inquiry.Inquiry.CartonEntity.Views._cartonListPartial)
+
+
+
+
+    <div class="modal fade" id="reportPopUp" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content list-group">
+                <a class="list-group-item list-group-item-success">
+                    <span class="close glyphicon glyphicon-remove" data-dismiss="modal" aria-hidden="true"></span>
+                    <h4 class="modal-title">Programs</h4>
+                </a>
+                @if (Model.PalletId != null)
+                {
+                    <a href="@Model.UrlCartonToPallet"
+                       class="list-group-item" title="Open Bucket Summary Report" target="_blank">
+                        Scan To Pallet
+                        <span class="glyphicon glyphicon-chevron-right pull-right"></span>
+                    </a>
+                    <a href="@Model.UrlBulkUpdateCarton"
+                       class="list-group-item" title="Open Bucket Summary Report" target="_blank">
+                        Bulk Carton Update
+                        <span class="glyphicon glyphicon-chevron-right pull-right"></span>
+                    </a>
+                    <a href="@Model.UrlCartonLocating"
+                       class="list-group-item" title="Open Bucket Summary Report" target="_blank">
+                        Carton Locating
+                        <span class="glyphicon glyphicon-chevron-right pull-right"></span>
+                    </a>
+
+                }
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,7 @@
+C:\work\DcmsMobile\DcmsLibrary.Mvc\bin\Debug\DcmsLibrary.Mvc.dll
+C:\work\DcmsMobile\DcmsLibrary.Mvc\bin\Debug\DcmsLibrary.Mvc.pdb
+C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.csprojResolveAssemblyReference.cache
+C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.Resources.resources
+C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.csproj.GenerateResource.Cache
+C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.dll
+C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.pdb
