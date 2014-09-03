@@ -33,6 +33,5 @@ C:\work\github\second-test\EclipseLibrary.Mvc\bin\Debug\System.Web.Razor.xml
 C:\work\github\second-test\EclipseLibrary.Mvc\bin\Debug\System.Web.WebPages.xml
 C:\work\github\second-test\EclipseLibrary.Mvc\bin\Debug\System.Web.WebPages.Deployment.xml
 C:\work\github\second-test\EclipseLibrary.Mvc\bin\Debug\System.Web.WebPages.Razor.xml
-C:\work\github\second-test\EclipseLibrary.Mvc\obj\Debug\EclipseLibrary.Mvc.csprojResolveAssemblyReference.cache
 C:\work\github\second-test\EclipseLibrary.Mvc\obj\Debug\EclipseLibrary.Mvc.dll
 C:\work\github\second-test\EclipseLibrary.Mvc\obj\Debug\EclipseLibrary.Mvc.pdb

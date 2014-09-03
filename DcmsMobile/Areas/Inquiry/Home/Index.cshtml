@@ -1,0 +1,252 @@
+﻿@*https://github.com/bassjobsen/Bootstrap-3-Typeahead*@
+@{
+    ViewBag.Title = "Home";
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+}
+
+
+<div class="container">
+    <div class="page-header">
+        <h1>Inquiry Home <small>Search or Browse</small></h1>
+    </div>
+    <div class="row">
+        <div class="row">
+            <div class="col-md-4">
+                    <div class="list-group">
+                        <h4 class="list-group-item list-group-item-success">
+                            Outbound Shipment
+                            <small>Customer Orders</small>
+                            <span class="glyphicon glyphicon-upload pull-right"></span>
+                        </h4>
+                        <form class="form-horizontal" role="form" action="@Url.Action(MVC_Inquiry.Inquiry.CustomerEntity.Customer())">
+                            <div class="input-group">
+                                <input type="text" name="@MVC_Inquiry.Inquiry.CustomerEntity.CustomerParams.id" class="form-control" placeholder="Customer Name or Id" data-url-list="@Url.Action(MVC_Inquiry.Inquiry.CustomerEntity.CustomerAutocomplete())">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
+                                </span>
+                            </div>
+                        </form>
+                        <a href="#" class="list-group-item">Purchase Orders <span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                        <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.PickslipEntity.PickslipList())">Pickslips<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                        <a href="#" class="list-group-item">Pick Waves <span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                        <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.BoxList())">Boxes <span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                        <a href="#" class="list-group-item">Pallets<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                        <a class="list-group-item">Bill of Ladings<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                        <a class="list-group-item">Merchandise Returns<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                    </div>
+                </div>
+            <div class="col-md-4">                
+                <div class="list-group">
+                    <h4 class="list-group-item list-group-item-success">
+                        Inbound
+                        <small>Inventory Receipts</small>
+                        <span class="glyphicon glyphicon-download pull-right"></span>
+                    </h4>                  
+                    <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.IntransitEntity.IntransitShipmentList())">Intransit Shipments<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                    <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.CartonEntity.CartonList())">Cartons<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                    <a class="list-group-item" href="#">Pallets<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                </div>
+            </div>
+            <div class="col-md-4">              
+                <div class="list-group">
+                    <h4 class="list-group-item list-group-item-success">
+                        Warehouse
+                        <span class="glyphicon glyphicon-asterisk pull-right"></span>
+                    </h4>
+                    <form class="form-horizontal" role="form" action="@Url.Action(MVC_Inquiry.Inquiry.SkuEntity.Sku())">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Style, Color, UPC, ..." data-url-list="@Url.Action(MVC_Inquiry.Inquiry.SkuEntity.SkuAutocomplete())">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
+                            </span>
+                        </div>
+                    </form>
+                    <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.CartonAreaEntity.CartonAreaList())">Carton Areas<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                    <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.SkuAreaEntity.SKUAreaList())">SKU Areas<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                    <a class="list-group-item" href="#">Location<span class="glyphicon glyphicon-chevron-right pull-right"></span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@*<div class="container">
+    <div class="page-header">
+        <h1>Inquiry Home <small>Search or Browse</small></h1>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="jumbotron">
+                <h2>Outbound</h2>
+                <p>Customer Orders</p>
+                <form class="form-horizontal" role="form" action="@Url.Action(MVC_Inquiry.Inquiry.CustomerEntity.Customer())">
+                    <div class="input-group">
+                        <input type="text" name="@MVC_Inquiry.Inquiry.CustomerEntity.CustomerParams.id" class="form-control" placeholder="Customer Name or Id" data-url-list="@Url.Action(MVC_Inquiry.Inquiry.CustomerEntity.CustomerAutocomplete())">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
+                        </span>
+                    </div>
+
+                </form>
+                <ul class="list-inline">
+                    <li>
+                        <a class="btn btn-lg">
+                            Purchase Orders
+                        </a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg" href="@Url.Action(MVC_Inquiry.Inquiry.PickslipEntity.RecentPickslipList())">Pickslips</a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg">
+                            Pick Waves
+                        </a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg" href="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.BoxList())">Boxes</a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg">
+                            Pallets
+                        </a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg">
+                            Bill of Ladings
+                        </a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg">
+                            Merchandise Returns
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div> 
+        <div class="col-md-6">
+            <div class="jumbotron">
+                <h2>Inbound</h2>
+                <p>Inventory Receipts</p>
+                <ul class="list-inline">
+                    <li><a class="btn btn-lg" href="@Url.Action(MVC_Inquiry.Inquiry.IntransitEntity.IntransitShipmentList())">Intransit Shipments</a></li>
+                    <li><a class="btn btn-lg" href="@Url.Action(MVC_Inquiry.Inquiry.CartonEntity.CartonList())">Cartons</a></li>
+                    <li>
+                        <a class="btn btn-lg">
+                            Pallets
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div> 
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="jumbotron">
+                <h2>Warehouse</h2>
+                <div>
+                    <form class="form-horizontal" role="form" action="@Url.Action(MVC_Inquiry.Inquiry.SkuEntity.Sku())">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Style, Color, UPC, ..." data-url-list="@Url.Action(MVC_Inquiry.Inquiry.SkuEntity.SkuAutocomplete())">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
+                            </span>
+                        </div>
+                    </form>
+                </div>
+                <ul class="list-inline">
+                    <li>
+                        <a class="btn btn-lg" href="@Url.Action(MVC_Inquiry.Inquiry.CartonAreaEntity.CartonAreaList())">Carton Areas</a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg" href="@Url.Action(MVC_Inquiry.Inquiry.SkuAreaEntity.SKUAreaList())">SKU Areas</a>
+                    </li>
+                    <li>
+                        <a class="btn btn-lg">
+                            Location
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div> 
+</div>*@
+
+@section script {
+    <style type="text/css">
+        div.jumbotron {
+            padding-top:0.1em;
+        }
+    </style>
+    <script src="@Links_Inquiry.Areas.Inquiry.Home.bootstrap3_typeahead_js" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('input[data-url-list]').typeahead({
+                source: function (query, cb) {
+                    $.ajax({
+                        url: this.$element.attr("data-url-list"),
+                        context: this.$element,
+                        data: {
+                            term: query
+                        }
+                    }).then(function (response) {
+                        // Extract the label from each result in the array.
+                        // Store the value in a global map
+                        var x = $.map(response, function (val, i) {
+                            return val.label;
+                        });
+                        cb(x);
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+                        alert("error" + jqXHR.responseText);
+                    });
+                },
+                matcher: function (item) {
+                    return true;
+                },
+                //showHintOnFocus: true
+            });
+        });
+
+        //$(document).on("pageinit", function () {
+        //    $("ul[data-url-list]").on("filterablebeforefilter", function (e, data) {
+        //        // this is the ul
+        //        var value = $(data.input).val();
+        //        $(this).empty();
+        //        if (!value || value.length < 2) {
+        //            return;
+        //        }
+
+        //        $(this).html("<li><div class='ui-loader'><span class='ui-icon ui-icon-loading'></span></div></li>")
+        //            .listview("refresh");
+
+        //        $.ajax({
+        //            url: $(this).attr("data-url-list"),
+        //            context: this,
+        //            data: {
+        //                term: value
+        //            }
+        //        }).then(function (response) {
+        //            var url = $(this).attr("data-url-handlechoice");
+        //            var html = "";
+        //            $.each(response, function (i, val) {
+        //                if (val.value) {
+        //                    html += "<li>" + $("<a/>", {
+        //                        href: url.replace("~", val.value)
+        //                    }).text(val.label)[0].outerHTML + "</li>";
+        //                } else {
+        //                    html += "<li>" + $("<span/>").text(val.label)[0].outerHTML + "</li>";
+        //                }
+        //            });
+        //            $(this).html(html)
+        //                .listview("refresh")
+        //                .trigger("updatelayout");
+        //        }).fail(function (jqXHR, textStatus, errorThrown) {
+        //            alert("error" + jqXHR.responseText);
+        //        });
+
+        //    });
+        //});
+
+    </script>
+}
+@*$Id: Index.cshtml 26132 2014-08-28 08:52:37Z ssinghal $*@

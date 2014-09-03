@@ -1,0 +1,51 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.SkuAreaEntity.SkuAreaListViewModel
+@{
+        Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+      ViewBag.Title = string.Format("SKU Area List");
+}
+
+<div class="container">
+    <div class="page-header">
+        <h1>SKU Area List</h1>
+    </div>
+    <div class="list-group">
+
+        @for (var i = 0; i < Model.SKUAreaList.Count; ++i)
+        {
+
+            <a class="list-group-item" href="@Url.Action(MVC_Inquiry.Inquiry.SkuAreaEntity.SKUArea(Model.SKUAreaList[i].IaId))">
+                <strong>@Model.SKUAreaList[i].IaId:</strong> @Model.SKUAreaList[i].Description
+                <span class="pull-right"><span class="glyphicon glyphicon-chevron-right"></span></span>
+                <span class="badge pull-right">Locations : @Html.DisplayFor(m => m.SKUAreaList[i].NumberOfLocations)</span>
+            </a>
+
+        }
+    </div>
+
+</div>
+
+
+
+@*<div data-role="page">
+    <div data-role="header">
+        <h1>SKU Area List</h1>
+    </div>
+    <div class="ui-content">
+
+        <ul data-role="listview" data-inset="true">
+            @for (var i = 0; i < Model.SKUAreaList.Count; ++i)
+            {
+                <li>
+                    <a href="@Url.Action(MVC_Inquiry.Inquiry.SkuAreaEntity.SKUArea(Model.SKUAreaList[i].IaId))">
+                        <h3>@Model.SKUAreaList[i].IaId : @Model.SKUAreaList[i].Description</h3>
+                        <p class="ui-li-count">Locations : @Html.DisplayFor(m => m.SKUAreaList[i].NumberOfLocations)</p>
+                    </a>
+                </li>
+            }
+        </ul>
+        </a>
+    </div>
+</div>*@
+
+
+@*$Id: SKUAreaList.cshtml 26180 2014-09-01 08:15:02Z apanwar $*@

@@ -1,0 +1,155 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.BoxEntity.BoxPalletViewModel
+@{
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+    ViewBag.Title = string.Format("Box Pallet {0}", Model.PalletId);
+}
+
+<div class="container">
+    <div class="page-header">
+        <h1>
+            Box Pallet @Html.DisplayFor(m => m.PalletId) <small>
+                In Area <a href="@Url.Action(MVC_Inquiry.Inquiry.SkuAreaEntity.SKUArea(Model.Area))">
+                    @Html.DisplayFor(m => m.ShortName)
+                </a> of Building @Html.DisplayFor(m => m.Building)
+            </small>
+            <a class="btn btn-sm" href="@Url.Action(MVC_Inquiry.Inquiry.BoxEntity.BoxPalletExcel(Model.PalletId))">
+                <span class="glyphicon glyphicon-export"></span> Excel
+            </a>
+        </h1>
+    </div>
+    <ul class="nav nav-pills">
+        @for (var i = 0; i < Model.DcmsLinks.Count; ++i)
+        {
+            <li> <a href="@Model.DcmsLinks[i].Url" class="ui-btn">@Html.DisplayFor(m => m.DcmsLinks[i].ShortDescription)</a></li>
+        }
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed table-bordered">
+            <caption><h4>Pallet Contents</h4></caption>
+            <thead>
+                <tr>
+                    <th data-priority="6">#</th>
+                    <th>SKU<sup>&#8743;</sup></th>
+                    <th>Pieces</th>
+                    <th data-priority="1">VWH</th>
+                    <th data-priority="2">$ Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.AllSku.Count; i++)
+                {
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>@Html.ActionLink(Model.AllSku[i].DisplaySku, MVC_Inquiry.Inquiry.SkuEntity.Sku(Model.AllSku[i].SkuId))</td>
+                        <td>@Html.DisplayFor(m => Model.AllSku[i].Pieces)</td>
+                        <td>@Html.DisplayFor(m => Model.AllSku[i].VwhId)</td>
+                        <td>@Html.DisplayFor(m => Model.AllSku[i].ExtendedPrice)</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="success">
+                    <td>Total</td>
+                    <td></td>
+                    <td>@string.Format("{0:N0}", Model.AllSku.Sum(c => c.Pieces))</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#dlgPrint">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <span class="navbar-brand">Print Options</span>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="dlgPrint">
+                @using (Html.BeginForm(MVC_Inquiry.Inquiry.BoxEntity.PrintBoxesOfPallet(), FormMethod.Post, new
+            {
+                @class = "navbar-form navbar-left",
+                role = "form"
+            }))
+                {
+                    <input type="hidden" name="@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxesOfPalletParams.palletId"
+                           value="@Model.PalletId" />
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxesOfPalletParams.palletSummary" value="true" />
+                            Pallet Summary
+                        </label>
+                    </div>
+                    <div class="form-group">&nbsp;</div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxesOfPalletParams.unprintedBoxes" value="true" /> @Html.DisplayFor(m => m.UnprintedBoxes) Unprinted Labels
+                        </label>
+                    </div>
+                    <div class="form-group">&nbsp;</div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="@MVC_Inquiry.Inquiry.BoxEntity.PrintBoxesOfPalletParams.printedBoxes" value="true" /> @Html.DisplayFor(m => m.PrintedBoxes) Printed Labels
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        @Html.DropDownListFor(m => m.PrinterId, Model.PrinterList, "Printer...", new
+       {
+           required = "required",
+           name = @MVC_Inquiry.Inquiry.PickslipEntity.PrintPackingSlipParams.printerid,
+           @class = "form-control"
+       })
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Print</button>
+                    </div>
+                }
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    @Html.Partial(MVC_Inquiry.Inquiry.SharedViews.Views._boxListPartial)
+    @if (Model.PalletHistory.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-condensed table-bordered">
+                <caption>
+                    Pallet History
+                </caption>
+                <thead>
+                    <tr>
+                        <th>
+                            <abbr title="Operation Start Date">Date<sup>&#8744;</sup></abbr>
+                        </th>
+                        <th>Module</th>
+                        <th>Operator</th>
+                        <th>Outcome</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.PalletHistory)
+                    {
+                        <tr>
+                            <td>@item.OperationStartDate</td>
+                            <td>@item.ModuleCode</td>
+                            <td>@item.Operator</td>
+                            <td>@item.OutCome</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">No pallet History</div>
+    }   
+</div>

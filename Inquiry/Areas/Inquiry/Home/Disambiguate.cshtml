@@ -1,0 +1,31 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.Home.DisambiguateViewModel
+
+@{
+    ViewBag.Title = "Multiple Matches";
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+}
+
+<div class="container">
+    <div class="page-header">
+        <h1>@ViewBag.Title <small>@Model.Scan</small></h1>
+    </div>
+
+    <div class="list-group">
+        @foreach (var choice in Model.Choices)
+        {
+
+            <a href="@choice.Url" class="list-group-item list-group-item-success">
+                @choice.Description
+                <div class="badge">
+                    <span class="glyphicon glyphicon-chevron-right"></span>
+                </div>
+        </a>
+
+
+
+        }
+    </div>
+</div>
+
+
+@*$Id: Disambiguate.cshtml 26003 2014-08-20 06:37:31Z ssinghal $*@

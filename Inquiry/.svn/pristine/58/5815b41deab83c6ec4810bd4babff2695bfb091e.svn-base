@@ -1,0 +1,114 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.CartonEntity.CartonIntransitViewModel
+@{
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+}
+
+@*@section script {
+    <style type="text/css">
+        /* h1 within header is specially styles so that the heading uses full width of the screen. Do not use buttons in this header.
+            Use h2 to h9 if you want to obtain default jquery mobile styling.*/
+        .ui-header h1.ui-title {
+            margin-left: 1mm;
+            margin-right: 1mm;
+        }      
+    </style>
+}*@
+<div class="container">
+    <div class="page-header">
+        <h1><img src="~/Content/images/imagesCAB4292D.jpg" /> @Html.DisplayFor(m => m.CartonId)</h1>
+    </div>
+  
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    Belongs To
+                    <span class="pull-right"><span class="glyphicon glyphicon glyphicon-new-window"></span><a href="@Model.UrlReceiving"> Receiving</a></span>
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="col-md-6">
+                    <dl class="dl-horizontal">
+                        <dt>Shipment</dt>
+                        <dd>
+                            @if (!string.IsNullOrEmpty(Model.ShipmentId))
+                            {
+                                @Html.ActionLink(string.Format("{0} ", Model.ShipmentId), MVC_Inquiry.Inquiry.IntransitEntity.IntransitShipment(Model.ShipmentId))
+                                <span>Date</span>    @Html.DisplayFor(m => m.ShipmentDate)
+                            }
+                            else
+                            {
+                                <span>NA</span>
+                            }
+                        </dd>
+                        <dt>Sewing Plant Code</dt>
+                        <dd>
+                           
+                                @if (!string.IsNullOrEmpty(Model.PriceSeasonCode))
+                                {
+                                    @Html.DisplayFor(m => m.DisplaySewingPlant)
+                                }
+                                else
+                                {
+                                    <span>NA</span>
+                                }
+                           
+                        </dd>
+                        
+                        <dt>Source Order Prefix</dt>
+                        <dd>
+                            
+                                
+                                    @Html.DisplayFor(m => m.SourceOrderPrefix)
+                                
+                            
+                        </dd>
+                        <dt>Source order ID</dt>
+                        <dd>
+
+                               
+                                 @Html.DisplayFor(m => m.SourceOrderedID)
+                               
+                            
+                        </dd>
+                        <dt>Source Order Line #</dt>
+                        <dd>
+                            
+                               
+                                    @Html.DisplayFor(m => m.SourceOrderLineNumber)
+                                
+                            
+                        </dd>
+                        <dt>Price Season Code</dt>
+                        <dd>
+                           
+                                @Html.DisplayFor(m => m.PriceSeasonCode)
+                         
+                        </dd>
+
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="dl-horizontal">
+                        <dt>SKU</dt>
+                        <dd>
+                            <a href="@Url.Action(MVC_Inquiry.Inquiry.SkuEntity.Sku(Model.SkuId.Value))">@Html.DisplayFor(m => m.DisplaySku)</a>
+                        </dd>
+                        <dt>Quantity</dt>
+                        <dd>
+                           
+                                @Html.DisplayFor(m => m.Pieces)
+                          
+                        </dd>
+                        <dt>Virtual Warehouse</dt>
+                        <dd>
+                           
+                                @Html.DisplayFor(m => m.VwhId)
+                            
+                        </dd>
+
+                    </dl>
+                </div>
+            </div>
+        </div>
+        </div>
+

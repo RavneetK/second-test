@@ -1,0 +1,13 @@
+﻿@model DcmsMobile.Inquiry.Areas.Inquiry.SkuEntity.LabelViewModel
+@{
+    Layout = MVC_Inquiry.Inquiry.SharedViews.Views._layoutInquiry;
+    ViewBag.Title = string.Format("Label {0}", Model.LabelId);
+}
+
+<div class="container">
+    <div class="page-header">
+        <h1>@string.Format("Label {0}", Model.LabelId)
+            <small>@Html.DisplayFor(m => m.Description)</small>
+        </h1>
+    </div>
+</div>

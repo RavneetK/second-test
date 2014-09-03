@@ -1,0 +1,1931 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>EclipseLibrary.Oracle</name>
+    </assembly>
+    <members>
+        <member name="T:EclipseLibrary.Oracle.Helpers.BindParameter">
+            <summary>
+            A placeholder class to encapsulate the properties of an OracleParameter
+            </summary>
+            <remarks>
+            This class is very similar to OracleParameter. It exists because the same OracleParameter cannot be added to multiple OracleCommands.
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.BindParameter.OutputValueUpdater">
+            <summary>
+            Non null for out parameters only. Sets the out value in the calling method variable
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.BindParameter.ArrayBindSize">
+            <summary>
+            Used to specify the max size of each returned string in string OutParameterAssociativeArray
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.BindParameterCollection">
+            <summary>
+            Stores a list of BindParameters using case insensiive parameter names as the key
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.SqlBinderBase">
+            <summary>
+            Abstract base class for all Binders
+            </summary>
+            <remarks>
+            <para>
+            Sharad 8 Oct 2012: ActionName support: The static create functions determine the name of the calling method and pass it as the action name to the constructor.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.#ctor(System.String)">
+            <summary>
+            SqlBinder.Create() is recommended instead of using this cnstructor directly
+            </summary>
+            <param name="actionName"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.GetBindParameter(System.String,System.Data.ParameterDirection)">
+            <summary>
+            Returns the parameter of the passed name. If it does not exist, creates the parameter
+            </summary>
+            <param name="field">Parameter name</param>
+            <param name="dir">Bind Direction</param>
+            <returns>Returns existing or newly created bind parameter</returns>
+            <remarks>
+            If it becomes necessary to create the parameter, only the direction and name are set. All other properties must be set by the caller.
+            For existing parameters, the passed direction is merged with the existing direction. Thus if an input parameter is found, and the passed
+            direction is output, then this parameter now becomes input/output.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.ParameterXmlArray(System.String,System.Collections.Generic.IEnumerable{System.String})">
+             <summary>
+             Bind string array parameter
+             &lt;a pre="AND BKT.BUCKET_ID IN (" sep="," post=")" &gt;:BUCKETLIST &lt;/a &gt;
+             </summary>
+             <param name="field"></param>
+             <param name="values"></param>
+             <returns></returns>
+             <remarks>
+             This parameter can only be used within the <![CDATA[<a>]]> tag of XML query as shown in the example.
+             Using this parameter in any other context will result in severe exceptions.
+             </remarks>
+             <example>
+             <code>
+             <![CDATA[
+            public int DeleteBols(IEnumerable<string> ShippingIdList)
+            {
+                const string QUERY = @"
+                BEGIN
+                        UPDATE <proxy />PS PS
+                        SET PS.SHIPPING_ID =''
+                        WHERE PS.SHIPPING_ID IN(<a sep=','>:SHIPPINGIDLIST</a>)
+                        and PS.transfer_date is null;
+                        DELETE FROM <proxy />SHIP S
+                        WHERE S.SHIPPING_ID IN (<a sep=','>:SHIPPINGIDLIST</a>)
+                        ;
+                END;
+                ";
+                var binder = SqlBinder.Create().Parameter("SHIPPINGIDLIST", ShippingIdList);
+                return _db.ExecuteDml(QUERY, binder);
+            }
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.ParameterXmlArray(System.String,System.Collections.Generic.IEnumerable{System.Int32})">
+             <summary>
+             Bind an array of integer values.
+             &lt;a pre="AND BKT.BUCKET_ID IN (" sep="," post=")" &gt;:BUCKETLIST &lt;/a &gt;
+             </summary>
+             <param name="field"></param>
+             <param name="values"></param>
+             <remarks>
+             <para>
+             array parameters are special handled to support XML array binding.
+             </para>
+             <example>
+             <![CDATA[
+            public void FreezeBuckets(IEnumerable<int> bucketList)
+            {
+                var QUERY = @"
+                    UPDATE <proxy />BUCKET BKT SET BKT.FREEZE = 'Y' 
+                        WHERE BKT.FREEZE IS NULL
+                        <a pre="AND BKT.BUCKET_ID IN (" sep="," post=")">:BUCKETLIST</a>
+                ";
+                var binder = new SqlBinder("Freeze Buckets");
+                binder.Parameter("BUCKETLIST", bucketList);
+                _db.ExecuteNonQuery(QUERY, binder);
+            }
+             ]]>
+             </example>
+             </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.ParameterXPath(System.String,System.Boolean)">
+            <summary>
+            Datatype is set to Int16. Value is set to null for false, 1 for true
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+            <remarks>
+            This parameter is primarily intended for XPath expressions. It is not very useful for binding to an Oracle query.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.InParameterString(System.String,System.String)">
+            <summary>
+            Bind an input string parameter.
+            </summary>
+            <param name="field">Parameter Name</param>
+            <param name="value">Parameter value</param>
+            <returns>The binder to enable fluent syntax</returns>
+            <remarks>
+            Oracle Doc says: When sending a null parameter value to the database, the user must specify DBNull, not null.
+            The null value in the system is an empty object that has no value. DBNull is used to represent null values.
+            The user can also specify a null value by setting Status to OracleParameterStatus.NullValue. In this case, the provider sends a null value to the database.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.InParameterInt(System.String,System.Nullable{System.Int32})">
+            <summary>
+            Bind a nullable integer parameter
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.InParameterDateTime(System.String,System.Nullable{System.DateTime})">
+            <summary>
+            Bind a nullable date parameter
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.InParameterDecimal(System.String,System.Nullable{System.Decimal})">
+            <summary>
+            Bind a floating point parameter
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderBase.OnQueryExecuted(System.Int32,Oracle.ManagedDataAccess.Client.OracleParameterCollection)">
+            <summary>
+            Call the setters for each out parameter. Setter is not called if the out value is null.
+            </summary>
+            <param name="nRowsAffected">Return value of ExecuteDML</param>
+            <param name="parameters">List of oracle parameters</param>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.SqlBinderBase.TolerateMissingParams">
+            <summary>
+            By default, unspecified parameters raise an exception. Set this to true to assume that each unbound parameter is of type string with null value.
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray">
+             <summary>
+             Encapsulates parameters needed for DML array binding
+             </summary>
+             <remarks>
+             <para>
+             You implicitly construct an instance of this class when you use the <see cref="M:EclipseLibrary.Oracle.SqlBinder.Create(System.Int32)"/> overload and pass it the number of times your DML needs to execute.
+             Then you create input parameters using one of the <c>Parameter</c> overloads. The DML query can have a <c>RETURNING</c> clause and you can receive the
+             returned values by binding out parameters using one of the <c>OutParameter</c> overloads.
+             </para>
+             </remarks>
+             <example>
+             <code>
+             <![CDATA[
+            internal void InsertBoxesForPickslip(IEnumerable<Box> boxes, IEnumerable<OrderedSku> orderedSku)
+            {
+                // This DML query will be executed multiple times
+                const string QUERY_BOX = @"
+            INSERT INTO <proxy />box
+            (pickslip_id,
+            ucc128_id,
+            case_id,
+            sequence_in_ps,
+            min_pieces_per_box,
+            vwh_id)
+            VALUES
+            (:PICKSLIP_ID,
+            <proxy />GET_UCC128_ID,
+            :CASE_ID,
+            :sequence_in_ps,
+            NULL,
+            :vwh_id)
+            RETURNING pickslip_id, ucc128_id INTO :pickslip_id_list, :ucc128_id_list
+            ";
+                // Parameters CASE_ID, PICKSLIP_ID, vwh_id will be bound using a single call to Parameters
+                var queryBox =
+                    (from box in boxes
+                        select new
+                        {
+                            CASE_ID = box.Case.CaseId,
+                            PICKSLIP_ID = box.PickslipId,
+                            vwh_id = orderedSku.First(p => box.AllSku.First().SkuId == p.SkuId).VwhId,  // VwhId of the first SKU in the box
+                        }).ToArray();
+            
+                // Create a binder which will execute the query queryBox.Length times
+                var binderBox = SqlBinder.Create(queryBox.Length)
+                 .Parameters(queryBox)
+                 .Parameter("sequence_in_ps", Enumerable.Range(orderedSku.Select(p => p.MaxSequenceInPs ?? 0).Max(), queryBox.Count).ToArray());
+            
+                // Prepare to receive RETURNING values
+                IList<string> uccList = null;
+                IList<int> pickslipList = null;
+                binderBox.OutParameter("ucc128_id_list", (values) => uccList = values.ToList());
+                binderBox.OutParameter("pickslip_id_list", (values) => pickslipList = values.ToList());
+                _db.ExecuteDml(QUERY_BOX, binderBox);
+                
+               // The values returned are now available in uccList and pickslipList
+             }
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.#ctor(System.Int32,System.String)">
+            <summary>
+            Internal constructor. Use <see cref="M:EclipseLibrary.Oracle.SqlBinder.Create(System.Int32)"/> to create an instance.
+            </summary>
+            <param name="arrayBindCount"></param>
+            <param name="actionName"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.Parameter(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Bind a string parameter
+            </summary>
+            <param name="field">Parameter name</param>
+            <param name="values">Array of values. The number of values must be at least <see cref="P:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.ArrayBindCount"/></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.OutParameter(System.String,System.Action{System.Collections.Generic.IEnumerable{System.String}})">
+            <summary>
+            Returns string values returned by RETURNING clause
+            </summary>
+            <param name="field">Output parameter name</param>
+            <param name="setter">values => mylist = values.ToList(). Will not be called if no rows are </param>
+            <returns>Self to enable chaining</returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.OutParameter(System.String,System.Action{System.Collections.Generic.IEnumerable{System.Int32}})">
+            <summary>
+            Returns integer values returned by RETURNING clause
+            </summary>
+            <param name="field">Output parameter name</param>
+            <param name="setter">values => mylist = values.ToList()</param>
+            <returns>Self to enable chaining</returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.OutParameter(System.String,System.Action{System.Collections.Generic.IEnumerable{System.Nullable{System.DateTime}}})">
+            <summary>
+            Returns Date values returned by RETURNING clause
+            </summary>
+            <param name="field">Output parameter name</param>
+            <param name="setter">values => mylist = values.ToList()</param>
+            <returns>Self to enable chaining</returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.Parameter(System.String,System.Collections.Generic.IEnumerable{System.Nullable{System.Int32}})">
+            <summary>
+            Nullable Integer parameter
+            </summary>
+            <param name="field">Paramter name</param>
+            <param name="values">Array of nullable integers</param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.Parameter(System.String,System.Collections.Generic.IEnumerable{System.Int32})">
+            <summary>
+            Integer parameter
+            </summary>
+            <param name="field">Paramter name</param>
+            <param name="values">Array of integers</param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.Parameter(System.String,System.Collections.Generic.IEnumerable{System.Nullable{System.DateTime}})">
+            <summary>
+            Bind a Date parameter
+            </summary>
+            <param name="field">Parameter name</param>
+            <param name="values">Array of dates</param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.Parameters``1(System.Collections.Generic.IEnumerable{``0})">
+             <summary>
+             Bind multiple parameters in one call
+             </summary>
+             <typeparam name="T"></typeparam>
+             <param name="values"></param>
+             <returns></returns>
+             <example>
+             <code>
+             <![CDATA[
+            var queryBox =
+                (from box in boxes
+                    select new
+                    {
+                        CASE_ID = box.Case.CaseId,
+                        PICKSLIP_ID = box.PickslipId,
+                        vwh_id = box.VwhId
+                    }).ToList();
+            
+            var binderBox = SqlBinder.Create(queryBox.Count);
+            binderBox.Parameters(queryBox);
+            _db.ExecuteDml(QUERY_BOX, binderBox);
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.OnQueryExecuted(System.Int32,Oracle.ManagedDataAccess.Client.OracleParameterCollection)">
+            <summary>
+            If no rows are affected by the DML, we do not want to invoke the setters
+            </summary>
+            <param name="nRowsAffected"></param>
+            <param name="parameters"></param>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray.ArrayBindCount">
+            <summary>
+            This is set by the constructor. Cannot be changed thereafter.
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.XPath.ConditionalFormatter">
+             <summary>
+             Provides the ability to conditionally decide which format string to use
+             </summary>
+             <remarks>
+             <para>
+             You supply a pair of condition and format strings. Each condition is evaluated and the format string
+             corresponding to the first condition which evaluates to <c>true</c> is used. The general syntax is
+             <c>{0::cond1:fmt1:cond2:fmt2:fmtdefault</c>. If <c>cond1</c> evaluates to true, format string <c>fmt1</c>
+             is used. If none of the conditions evaluate to true, then the last format string is used, which in this case is
+             <c>fmtdefault</c>.
+             </para>
+             <para>
+             For formattable values, such as int, decimal, DateTime, etc., the selected format string is passed to the
+             <c>ToString()</c> function. For all other values, the format string is used as is. If the format string contains
+             the <c>~</c> character, it is replaced with the string version of the argument.
+             </para>
+             <para>
+             Consider the example <c>{0::$amount &gt; 1000:<strong>#</strong>:$amount &lt;= 1000:#}</c>.
+             If <c>amount</c> is greater than 1000, then this format string is equivalent to
+             <c>{0:<strong>#</strong>}</c>. If <c>amount</c> is 1000 or less, the format string is equivalent to
+             <c>{0:#}</c>. The conditions are evaluated in order so the first condition which evaluates
+             to true wins. The net result is that amounts greater than 1000 are displayed as bold.
+             </para>
+             <para>
+             If none of the conditions match, then the last format string is used. The above example can be more
+             succinctly and eqivalently written as <c>{0::$amount &gt; 1000:<b>#</b>:#}</c>
+             </para>
+             <para>
+             String arguments permit the special character ~ (tilde) which is replaced with the value of the string.
+             </para>
+             <para>
+             Sharad 28 Sep 2012: This class is public because it is used by EclipseLibrary.WebForms
+             </para>
+             </remarks>
+             <example>
+             <para>
+             Create a conditional formatter by supplying it with a lambda expression which is responsible for returning values
+             of variables used in the XPath expressions.
+             </para>
+             <code>
+             <![CDATA[
+            var dict = new Dictionary<string,object> {
+                {"IsDeduction", true},
+                {"picking_status", "Good"}
+            };
+            var formatter = new ConditionalFormatter(p => dict[p]);
+             ]]>
+             </code>
+             <para>
+             String examples
+             </para>
+             <list type="table">
+             <listheader>
+             <term>Format String</term>
+             <description>Result</description>
+             </listheader>
+             <item>
+             <term>string.Format(formatter, "{0::not($picking_status):Unprocessed:~}", "Sharad")</term>
+             <description>If <c>picking_status</c> is null, then result is <c>Unprocessed</c>,
+             otherwise the result is <c>Sharad</c>
+             </description>
+             </item>
+             <item>
+             <term>string.Format(formatter, "{0::$picking_status = 'DONE':(~):~}", "Sharad")</term>
+             <description>If <c>picking_status</c> is DONE, then result is <c>(Sharad)</c>,
+             otherwise the result is <c>Sharad</c>
+             </description>
+             </item>
+             </list>
+             <para>
+             <c>Bool</c> examples.
+             <list type="table">
+             <listheader>
+             <term>Format String</term>
+             <description>Result</description>
+             </listheader>
+             <item>
+             <term>string.Format(formatter, "{0::$IsDeduction:Deduction:Allowance}", true)</term>
+             <description>If <c>IsDeduction</c> is true, then result is <c>Deduction</c>,
+             otherwise the result is <c>Allowance</c>.
+             </description>
+             </item>
+             <item>
+             <term>string.Format(formatter, "{0::$IsDeduction:Deduction:Allowance}", false)</term>
+             <description>If <c>IsDeduction</c> is true, then result is <c>Deduction</c>,
+             otherwise the result is <c>Allowance</c>.
+             </description>
+             </item> 
+             </list>
+             </para>
+             </example>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator">
+            <summary>
+            Provides the ability to evaluate XPath expressions containing variables.
+            </summary>
+            <remarks>
+            <para>
+            Provides a simple way to evaluate XPath expressions. The only useful public functions are <see cref="M:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.Evaluate(System.String)"/>
+            and  <see cref="M:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.Matches(System.String)"/>. You can pass variable values in the constructor, or any time before evaluation using the
+            <see cref="P:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.Callback"/> property.
+            </para>
+            <para>
+            Each variable should be prefixed with a $ unless <see cref="P:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.VariablePrefix"/> has been specified.
+            </para>
+            <para>
+            Refer to MSDN for full syntax of XPath expressions.
+            </para>
+            <para>
+            Common boolean and comparison operators:
+            <![CDATA[
+            and or not() = != &lt; &lt;= &gt; &gt;=
+            ]]>
+            </para>
+            <para>
+            Common string functions
+            <![CDATA[
+            concat(string1, string2, ...) contains(str1, str2) starts-with(str1, str2) string-length(str)
+            substring(str, startPos, [length]) substring-after(str1, str2) substring-before(str1, str2)
+            ]]>
+            </para>
+            <para>
+            This class is public because it is used by EclipseLibrary.WebForms
+            </para>
+            <seealso cref="T:EclipseLibrary.Oracle.Helpers.XPath.ConditionalFormatter"/>
+            </remarks>
+            <example>
+            <code lang="C#">
+            <![CDATA[
+            Dictionary<string, object> dict = new Dictionary<string, object>();
+            dict.Add("Col1", 5);
+            dict.Add("Col2", 6);
+            dict.Add("Col3", 7);
+            dict.Add("Col4", 8);
+            ParseNavigator nav = new ParseNavigator(allValues);
+            object obj = nav.Evaluate("$Col1 + $Col2");   // Result: 11
+            obj = nav.Evaluate("$Col1 + $Col2 - ($Col3 + $Col4)");   // Result: -4
+            object obj = nav.Evaluate("$Col6 + $Col8");   // Exception: No such variable
+            ]]>
+            </code>
+            </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.#ctor(System.Func{System.String,System.Object})">
+            <summary>
+            This constructor raises error if any variable referenced in an xpath expression is not found in the
+            dictionary.
+            </summary>
+            <param name="valueCallback">Dictionary containing the name of the variable and its value</param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.Matches(System.String)">
+            <summary>
+            Same as <see cref="M:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.Evaluate(System.String)"/> but the result returned is boolean
+            </summary>
+            <param name="xpath"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.MoveToFirstChild">
+            <summary>
+            Not implemented
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.Callback">
+            <summary>
+            A dictionary of variable values to be used during expression evaluation
+            </summary>
+            <remarks>
+            <para>
+            It is often convenient to construct a single instance of <c>XPathEvaluator</c> and then evaluate
+            expressions with different variable values.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.XPath.XPathEvaluator.VariablePrefix">
+            <summary>
+            Normally each variable should be prefixed with $. If this is not the case, specify your prefix here.
+            </summary>
+            <remarks>
+            As an example, OracleDataSource uses : as the prefix for each variable
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XPath.ConditionalFormatter.GetFormat(System.Type)">
+            <summary>
+            Boilerplate implementation. Returns self if <paramref name="formatType"/> is <see cref="T:System.ICustomFormatter"/>
+            </summary>
+            <param name="formatType">The type of format needed</param>
+            <returns>null or self</returns>
+            <remarks>
+            <para>
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XPath.ConditionalFormatter.Format(System.String,System.Object,System.IFormatProvider)">
+            <summary>
+            Actually performs the formatting by evaluating XPath conditions
+            </summary>
+            <param name="format">A format string containing formatting specifications.</param>
+            <param name="arg">An object to format.</param>
+            <param name="formatProvider">An object that supplies format information about the current instance.</param>
+            <returns>The formatted string</returns>
+            <remarks>
+            <para>
+            The syntax of a valid format string is <c>{n::condition-1:format-string1:condition-2:format-string2:...:format-string-default}</c>.
+            The <c>::</c> after n triggers the condition evaluation process. The format string corresponding to the first condition which evaluates
+            to true is chosen and then used for formatting the string. If none of the conditions evaluate to true, then <c>format-string-default</c>
+            is used.
+            </para>
+            <para>
+            If <paramref name="format"/> starts with a <c>:</c>, then it goes through the process of evaluating the embedded XPath
+            expressions and choosing the actual format string to use. Once the actual format string is discovered, it provides the same behavior
+            that string.Format() would have provided using that format string.
+            </para>
+            </remarks>
+            <example>
+            <para>
+            Example format strings:
+            </para>
+            <list type="table">
+            <listheader>
+            <term>Sample Format String</term>
+            <description>Result</description>
+            </listheader>
+            <item>
+            <term>"{0:$IsGood:Nice Guy:Bad Fellow}"</term>
+            <description>If <c>IsGood</c> is true then <c>Nice Guy</c> else <c>Bad Fellow</c></description>
+            </item>
+            <item>
+            <term></term>
+            <description></description>
+            </item>
+            <item>
+            <term></term>
+            <description></description>
+            </item>
+            <item>
+            <term></term>
+            <description></description>
+            </item>
+            </list>
+            </example>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.XPath.ParseDataContext">
+            <summary>
+            Implements the ResolveVariable() function which simply returns an IXsltContextVariable corresponding
+            to the passed variable name. We also represent an empty variable since that is such a common case.
+            If the value in null, we return our own reference.
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XPath.ParseDataContext.ResolveVariable(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="prefix">Not used</param>
+            <param name="name">The name of the variable to lookup</param>
+            <returns>An interface representing the variable</returns>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException">The variable was not found in the dictionary
+            and missing values are not allowed.
+            </exception>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.XPath.ParseDataContext.ValueCallBack">
+            <summary>
+            A dictionary of variable values
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.OracleDataStoreException">
+            <summary>
+            Dispays more useful diagnostics when oracle error occurs, but only in DEBUG mode
+            </summary>
+            <remarks>
+            The contents of OracleErrorCollection are displayed. Raises <see cref="T:EclipseLibrary.Oracle.Helpers.OracleDataStoreErrorEvent"/> so that it can be logged even if this exception
+            is caught and handled
+            </remarks>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.OracleDataRow2">
+            <summary>
+            Represents an instance of a row returned from an SQL query
+            </summary>
+            <remarks>
+            <para>
+            This class is used extensively by the querying functions of <see cref="T:EclipseLibrary.Oracle.OracleDatastore"/> class.
+            In debug mode, this class throws exception if the same column name is used more than once within the query. It also raises
+            exception if the query retrieves 
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.#ctor(Oracle.ManagedDataAccess.Client.OracleDataReader)">
+            <summary>
+            Create an instance once you have recieved a reader
+            </summary>
+            <param name="reader"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.RefreshValues">
+            <summary>
+            Called after the reader has been positioned at the next row
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.GetXml(System.String)">
+            <summary>
+            Use this to retrieve the XML inside an XMLType as an XElement
+            </summary>
+            <param name="fieldName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.GetDecimal(System.String)">
+            <summary>
+            Returns a fractional value stored in the database
+            </summary>
+            <param name="fieldName"></param>
+            <returns></returns>
+            <remarks>
+            If you attempt to retrieve <c>Weight/12</c> from the database, you will get an overflow error because the precision of the returned result is not
+            sufficient to fit into a decimal. We catch this exception and reduce the precision before returning the value.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.GetEnum``1(System.String)">
+            <summary>
+            Expects database field to be of string type
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="fieldName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.GetEnum``1(System.Int32)">
+            <summary>
+            Attempts the parse the string returned by the database into an enum of type TValue
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="index"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.GetDate(System.String)">
+            <summary>
+            Retrieves the date value from an OracleDate, OracleTimeStamp, OracleTimeStampTZ or OracleTimeStampLTZ column
+            </summary>
+            <param name="fieldName">Column name</param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.GetTimeStampTZ(System.String)">
+            <summary>
+            For Timestamp with TimeZone database columns
+            </summary>
+            <param name="fieldName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.DebugCheck">
+            <summary>
+            This is called after we are done with retrieving all values. It ensures that every field retrieved by the query is used.
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.OracleDatastore">
+             <summary>
+             Use this class to conveniently execute queries against Oracle database
+             </summary>
+             <remarks>
+             <para>
+             You must explicitly create the connection using <see cref="M:EclipseLibrary.Oracle.OracleDatastore.CreateConnection(System.String,System.String)"/>.
+             Proxy authentication is supported.
+             Query results are returned as strongly typed classes by ExecuteSingle() and ExecuteReader().
+             </para>
+             <para>
+             Retrieving only the first column. In this situation, you can create a binder for a scalar type and not specify any mapping.
+             </para>
+             <para>
+             Sharad 7 Jun 2011: New properties <see cref="P:EclipseLibrary.Oracle.OracleDatastore.ClientInfo"/> and <see cref="P:EclipseLibrary.Oracle.OracleDatastore.ModuleName"/> added.
+             </para>
+             <para>
+             Sharad 12 Aug 2011: Added support for transactions <see cref="M:EclipseLibrary.Oracle.OracleDatastore.BeginTransaction(System.Data.IsolationLevel)"/>.
+             </para>
+             <para>
+             Sharad 20 Aug: Adding query info to all OracleExceptions. The custom page of DcmsMobile is capable of printing this extra info.
+             </para>
+             </remarks>
+             <example>
+             <para>
+             The following is an example of executing a typical query in a repository function.
+             </para>
+             <code>
+             <![CDATA[
+            internal IList<Box> GetArchivePickslipBoxes(int pickslipId)
+            {
+                const string QUERY_ArchivePickslipBoxes = @"
+                    SELECT MAX(DEM_BOX.UCC128_ID) AS UCC128_ID,
+                        COUNT(*) AS SKU_IN_BOX,
+                        NULL AS AREA,
+                        SUM(DEM_PSDET.QUANTITY_ORDERED) AS CURRENT_PIECES,
+                        SUM(DEM_PSDET.QUANTITY_ORDERED) AS EXPECTED_PIECES
+                FROM DEM_PICKSLIP_DETAIL_H DEM_PSDET
+                INNER JOIN DEM_BOX_H DEM_BOX
+                    ON DEM_PSDET.PICKSLIP_ID = DEM_BOX.CHECKING_ID
+                WHERE DEM_PSDET.PICKSLIP_ID = :PICKSLIP_ID
+                GROUP BY DEM_PSDET.STYLE,
+                        DEM_PSDET.COLOR,
+                        DEM_PSDET.DIMENSION,
+                        DEM_PSDET.SKU_SIZE
+                    ";
+                    
+                var binder = new SqlBinder<Box>("GetArchivePickslipBoxes");
+                binder.CreateMapper(QUERY_ArchivePickslipBoxes, config =>
+                {
+                    config.CreateMap<Box>()
+                        .MapField("UCC128_ID", dest => dest.Ucc128Id)
+                        .MapField("AREA", dest => dest.Area)
+                        .MapField("EXPECTED_PIECES", dest => dest.ExpectedPieces)
+                        .MapField("CURRENT_PIECES", dest => dest.CurrentPieces)
+                        .MapField("SKU_IN_BOX", dest => dest.CountSku)
+                        ;
+                });
+                binder.Parameter("PICKSLIP_ID", pickslipId);
+                var result = _db.ExecuteReader(binder);
+                return result;
+            }
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.#ctor(System.Web.TraceContext)">
+            <summary>
+            
+            </summary>
+            <remarks>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.Dispose">
+            <summary>
+            Disposes the connection
+            </summary>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.OracleDatastore._builder">
+            <summary>
+            For use by the ProxyTagResolver
+            </summary>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.OracleDatastore._proxyTagValue">
+            <summary>
+            The value which will replace <proxy/> tag in queries, e.g. dcms8.
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.CreateConnection(System.String,System.String)">
+            <summary>
+            Creates a connection on behalf of the passed <paramref name="userId"/>.
+            </summary>
+            <param name="connectString"></param>
+            <param name="userId"></param>
+            <remarks>
+            <para>
+            If you are not using proxy authentication, then the <paramref name="connectString"/> is used as is and <paramref name="userId"/>
+            is ignored.
+            </para>
+            <para>
+            The normal case is that the passed <paramref name="connectString"/> contains the <c>ProxyUserId</c> and
+            <c>ProxyPassword</c> attributes. The passed userId is simply set as the <c>UserId</c> attribute of the connect string.
+            </para>
+            <para>
+            If the user is not authenticated, <paramref name="userId"/> will be null. In this case the passed <paramref name="connectString"/> is modified
+            to make the ProxyUserId as the real user id. This connection will therefore not use a proxy.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.Connection_StateChange(System.Object,System.Data.StateChangeEventArgs)">
+            <summary>
+            Called whenever the connection is opened. Set the module and client info
+            </summary>
+            <param name="sender"></param>
+            <param name="e"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.BeginTransaction(System.Data.IsolationLevel)">
+            <summary>
+            This is the only function needed to create a transaction
+            </summary>
+            <returns></returns>
+            <remarks>
+            The commit and rollback methods are available on the returned transaction object.
+            If you forget to commit, none of your changes will be saved. This actually is helpful behavior because we do not have to worry about
+            rolling back in case of an exception.
+            </remarks>
+            <example>
+            <code>
+            <![CDATA[
+            using (var trans = _db.BeginTransaction()) {
+              foreach (var dispos in dispositions)
+              {
+                  _db.ExecuteNonQuery(...);
+              }
+              trans.Commit();
+            }
+            ]]>
+            </code>
+            </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.ExecuteDml(System.String,EclipseLibrary.Oracle.Helpers.SqlBinderDmlArray)">
+            <summary>
+            This overload executed Array DML
+            </summary>
+            <param name="xml"></param>
+            <param name="binder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.ExecuteDml(System.String,EclipseLibrary.Oracle.SqlBinder)">
+            <summary>
+            Executes the passed query using the passed parameters
+            </summary>
+            <param name="xml">The query to execute</param>
+            <param name="binder">Parameter information for the query. Null if there are no parameters.</param>
+            <remarks>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.ExecuteSingle``1(System.String,EclipseLibrary.Oracle.Helpers.SqlBinder{``0})">
+            <summary>
+            Executes the query and returns the first row as a strongly typed object.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="xmlQuery"></param>
+            <param name="binder"></param>
+            <returns>The first row as a strongly typed object, or null if no row was found</returns>
+            <remarks>
+            <para>
+            See <see cref="T:EclipseLibrary.Oracle.OracleDatastore"/> for a code example.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.OracleDatastore.ExecuteReader``1(System.String,EclipseLibrary.Oracle.Helpers.SqlBinder{``0},System.Int32)">
+            <summary>
+            Executes the query using the information in the passed <paramref name="binder"/>. When no rows are found, an empty list is returned.
+            </summary>
+            <typeparam name="T">The type of each row in the list of results</typeparam>
+            <param name="xmlQuery"></param>
+            <param name="binder">Information which describes the query to execute</param>
+            <param name="maxRows">Maximum number of rows to retrieve. 0 means all.</param>
+            <returns>A list of rows returned by the query</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="binder"/> is null</exception>
+            <exception cref="T:System.OperationCanceledException">Number of rows retturned by query exceeded <see cref="P:EclipseLibrary.Oracle.OracleDatastore.DefaultMaxRows"/></exception>
+            <exception cref="T:Oracle.ManagedDataAccess.Client.OracleException">Query execution error</exception>
+            <remarks>
+            <para>
+            The connection is opened if it is not already open.
+            </para>
+            <para>
+            Sharad 17 Nov 2011: Added new parameter <paramref name="maxRows"/>
+            </para>
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.OracleDatastore.Connection">
+            <summary>
+            The connection to be used for executing queries
+            </summary>
+            <remarks>
+            <para>
+            The connection can be created using the <see cref="M:EclipseLibrary.Oracle.OracleDatastore.CreateConnection(System.String,System.String)"/> method.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.OracleDatastore.ModuleName">
+            <summary>
+            Set via DBMS_APPLICATION_INFO. Max 48 characters. If it is too long, we chop off the initial characters.
+            </summary>
+            <remarks>
+            You should set this property immediately after creating the connection. It will be passed along with each query which will
+            be executed against this connection.
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.OracleDatastore.ClientInfo">
+            <summary>
+            Set via DBMS_APPLICATION_INFO.
+            </summary>
+            <remarks>
+            You should set this property immediately after creating the connection. It will be passed along with each query which will
+            be executed against this connection.
+            Max 64 characters
+            </remarks>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.XmlToSql">
+            <summary>
+            Provides the functionality to prune an SQL query by interpreting the embedded XML tags
+            </summary>
+            <remarks>
+            <para>
+            By embedding XML within the SQL statement, you are able to prune the query based on parameter values. Additionally, Oracle
+            does not tolerate parameters which are not used within a query. The function BuildCommand()
+            provides both these functionalities. It parses the XML based on the value of parameters in the passed command and then removes all parameters
+            from cmd which are not used within the resulting query.
+            </para>
+            <para>
+            Sharad 28 Sep 2012: This class is public because it is used by EclipseLibrary.WebForms
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.XmlToSql.BuildCommand(Oracle.ManagedDataAccess.Client.OracleCommand,System.Func{System.String,Oracle.ManagedDataAccess.Client.OracleParameter},System.Func{System.Xml.Linq.XElement,System.Boolean})">
+            <summary>
+            Converts the XML provided in <c>cmd.CommandText</c> to a proper SQL statement
+            </summary>
+            <param name="cmd"></param>
+            <param name="paramUpdater">Populates the parameter properties corresponding to the passed parameter, or null if <paramref name="cmd"/> already contains all parameters</param>
+            <param name="customTagResolver">If an unrecognized xml tag is encountered, this lambda will be called.</param>
+            <remarks>
+            <para>
+            If you have already added the parameters to the passed command, then you do not need to pass <paramref name="paramUpdater"/>.
+            Otherwise it is called for each parameter referenced in the SQL text or in the XML condition.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.QueryLogging">
+            <summary>
+            Provides useful functions for logging queries. I wanted to make this class internal, but it is being used by EclipseLibrary.WebForms
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.QueryLogging.TraceOracleCommand(System.Web.TraceContext,System.Data.Common.DbCommand,System.String)">
+            <summary>
+            Designed for MVC applications. They pass the controller trace context
+            </summary>
+            <param name="ctx"></param>
+            <param name="cmd"></param>
+            <param name="actionName"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.QueryLogging.TraceQueryEnd(System.Web.TraceContext)">
+            <summary>
+            Call this after query has finished executing to trace the query end time.
+            Writes to Diagnostics if ctx is null
+            </summary>
+            <param name="ctx"></param>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.SqlBinder">
+             <summary>
+             This serves as the class to use for parameter binding for PL/SQL blocks executed by <see cref="T:EclipseLibrary.Oracle.OracleDatastore"/>.
+             </summary>
+             <remarks>
+             <para>
+             <see cref="T:EclipseLibrary.Oracle.SqlBinder"/> can be passed as a parameter to the functions <see cref="M:EclipseLibrary.Oracle.OracleDatastore.ExecuteNonQuery(System.String,EclipseLibrary.Oracle.SqlBinder)"/>.
+             </para>
+             <para>
+             RefCursor support. See <see cref="M:EclipseLibrary.Oracle.SqlBinder.OutRefCursorParameter(System.String,System.Action{System.Collections.Generic.IEnumerable{EclipseLibrary.Oracle.Helpers.OracleDataRow2}})"/>
+             </para>
+             </remarks>
+             <example>
+             <para>
+             Following is a simple use of how to pass parameters to <see cref="M:EclipseLibrary.Oracle.OracleDatastore.ExecuteNonQuery(System.String,EclipseLibrary.Oracle.SqlBinder)"/>.
+             The overloaded Parameter functions are used to specify the value of the parameter.
+             </para>
+             <code lang="c#">
+             <![CDATA[
+            public static void RemoveFromPallet(OracleDatabase db, string uccId)
+            {
+                string QUERY = @"update <proxy />box  b
+            set b.ia_id = (
+            select i.ia_id from <proxy />iaconfig i where i.iaconfig_id = '$BADVERIFY'
+            )
+            where b.ucc128_id= :UccId";
+                var binder = SqlBinder.Create();
+                binder.Parameter("UccId", uccId);
+                db.ExecuteNonQuery(QUERY, binder);
+            }
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.#ctor(System.String)">
+            <summary>
+            SqlBinder.Create() is recommended instead of using this constructor directly
+            </summary>
+            <param name="actionName"></param>
+            <remarks>
+            This should be made private after warnings have been removed from applications.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Create``1(System.Func{EclipseLibrary.Oracle.Helpers.OracleDataRow2,``0})">
+             <summary>
+             Create a binder for retrieving the results of an SQL query
+             <example>
+             SqlBinder.Create(row => new RestockCarton
+              {
+                CartonId = row.GetString("CARTON_ID"),
+                ...
+              });
+             </example>
+             </summary>
+             <typeparam name="T">Type of each row</typeparam>
+             <param name="factory">Lambda which takes a row and returns a strongly typed object
+             <example>
+            row => new RestockCarton {
+                    CartonId = row.GetString("CARTON_ID"),
+                    QualityCode = row.GetString("QUALITY_CODE"),
+                    SkuInCarton = new Sku {
+                                            SkuId = row.GetInteger("SKU_ID"),
+                                            Style = row.GetString("STYLE")
+                                        }
+                }
+             </example>
+             </param>
+             <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Create">
+            <summary>
+            Create a binder for executing PL/SQL blocks
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Create(System.Int32)">
+            <summary>
+            Create a binder for for executing DML multiple times using DML array binding
+            </summary>
+            <param name="arrayBindCount"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.OutRefCursorParameter(System.String,System.Action{System.Collections.Generic.IEnumerable{EclipseLibrary.Oracle.Helpers.OracleDataRow2}})">
+            <summary>
+            The parameter returns a ref cursor. Specify a factory which will convert the returned data to strongly typed objects
+            </summary>
+            <param name="parameterName"></param>
+            <param name="factory"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Parameter(System.String,System.String)">
+            <summary>
+            Bind an input string parameter with specified max size. Should this be obsolete?
+            </summary>
+            <param name="field">Parameter Name</param>
+            <param name="value">Parameter value</param>
+            <returns>The binder to enable fluent syntax</returns>
+            <remarks>
+            Oracle Doc says: When sending a null parameter value to the database, the user must specify DBNull, not null.
+            The null value in the system is an empty object that has no value. DBNull is used to represent null values.
+            The user can also specify a null value by setting Status to OracleParameterStatus.NullValue. In this case, the provider sends a null value to the database.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Parameter(System.String,System.Nullable{System.Int32})">
+            <summary>
+            Bind a nullable integer parameter
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Parameter(System.String,System.Nullable{System.DateTime})">
+            <summary>
+            Bind a nullable date parameter
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Parameter(System.String,System.Nullable{System.Decimal})">
+            <summary>
+            Bind a floating point parameter
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Parameter(System.String,System.Nullable{System.TimeSpan})">
+            <summary>
+            Bind an interval value
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.Parameter(System.String,System.Nullable{System.DateTimeOffset})">
+            <summary>
+            Bind a TimeStampTZ value
+            </summary>
+            <param name="field"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.ParameterAssociativeArray(System.String,System.Collections.Generic.ICollection{System.String})">
+            <summary>
+            Passes an aray to a PL/SQL Procedure
+            </summary>
+            <param name="field"></param>
+            <param name="values"></param>
+            <returns></returns>
+            <remarks>
+            <para>
+            Inspired by http://www.oracle.com/technetwork/issue-archive/2007/07-jan/o17odp-093600.html
+            See <see cref="M:EclipseLibrary.Oracle.SqlBinder.OutParameterAssociativeArray(System.String,System.Action{System.Collections.Generic.ICollection{System.String}},System.Int32,System.Int32)"/> for an example
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.ParameterAssociativeArray(System.String,System.Collections.Generic.ICollection{System.Nullable{System.Int32}})">
+            <summary>
+            Passes an integer array to a PL/SQL procedure
+            </summary>
+            <param name="field"></param>
+            <param name="values"></param>
+            <returns></returns>
+            <remarks>
+            See <see cref="M:EclipseLibrary.Oracle.SqlBinder.OutParameterAssociativeArray(System.String,System.Action{System.Collections.Generic.ICollection{System.String}},System.Int32,System.Int32)"/> for an example.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.OutParameterAssociativeArray(System.String,System.Action{System.Collections.Generic.ICollection{System.String}},System.Int32,System.Int32)">
+             <summary>
+             Bind an output PL/SQL associative array parameter
+             </summary>
+             <param name="field"></param>
+             <param name="setter"></param>
+             <param name="maxElements">Maximum number of elements which can be returned. ORA-06513 raised if this is too small.</param>
+             <param name="maxSizePerElement">Maximum size of each element. ORA-06502 raised if this is too small.</param>
+             <returns></returns>
+             <remarks>
+             Null values are returned as empty strings within the array.
+             </remarks>
+             <example>
+             <code>
+             <![CDATA[
+            create or replace package sharad_test is
+              -- Public type declarations
+              type string_list_t is table of varchar2(256) index by pls_integer;
+              -- Public function and procedure declarations
+              function test_func(a in string_list_t) return string_list_t;
+            end sharad_test;
+             ]]>
+             </code>
+             <code>
+             <![CDATA[
+                    public IEnumerable<Area> GetInventoryAreas()
+                    {
+                        const string QUERY = @"
+            BEGIN
+            :a := sharad_test.test_func(:a);
+            END;
+                        ";
+                        var arr = new[] { "a", "b" };
+                        var binder = SqlBinder.Create()
+                            .ParameterAssociativeArray("a", arr)
+                            .OutParameterAssociativeArray("a", val => arr = val.ToArray(), Enumerable.Repeat<int>(255, 3).ToArray());
+            
+                        _db.ExecuteNonQuery(QUERY, binder);
+                    }
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.OutParameterAssociativeArray(System.String,System.Action{System.Collections.Generic.ICollection{System.String}},System.Int32)">
+            <summary>
+            The output associcative array can have a maximum of 255 elements, each element having a max length of 255.
+            </summary>
+            <param name="field"></param>
+            <param name="setter"></param>
+            <param name="maxElements"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.SqlBinder.OutParameterAssociativeArray(System.String,System.Action{System.Collections.Generic.ICollection{System.Nullable{System.Int32}}},System.Int32)">
+             <summary>
+             Receives an integer array from a PL/SQL procedure
+             </summary>
+             <param name="field"></param>
+             <param name="setter"></param>
+             <param name="maxElements"></param>
+             <returns></returns>
+             <example>
+             <code>
+             <![CDATA[
+            public IEnumerable<Area> GetInventoryAreas()
+            {
+                const string QUERY = @"
+            BEGIN
+            :a := sharad_test.test_func(:a);
+            END;
+                ";
+                var arr = new int?[] { 1, 2 };
+                var binder = SqlBinder.Create()
+                    .ParameterAssociativeArray("a", arr)
+                    .OutParameterAssociativeArray("a", val => arr = val.ToArray());
+                _db.ExecuteNonQuery(QUERY, binder);
+                throw new NotImplementedException();
+            }
+             ]]>
+             </code>
+             </example>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Extensions.EnumerableEx.TakeUntil``1(System.Collections.Generic.IEnumerable{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Stops enumerating once the predicate is satisfied
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="elements"></param>
+            <param name="predicate"></param>
+            <returns></returns>
+            <example>
+            <para>
+            Example from OracleDataSourceView2.aspx.
+            </para>
+            <code lang="c#">
+            <![CDATA[
+            bKeep = elem.ElementsBeforeSelf().Reverse()
+                               .TakeUntil(p => p.Name.LocalName == "if")
+                               .All(p => toRemove.Contains(p));
+            ]]>
+            </code>
+            </example>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Helpers.SqlBinder`1">
+            <summary>
+            Provides a way to convert results returned by a query into strongly typed objects
+            </summary>
+            <typeparam name="T"></typeparam>
+            <remarks>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinder`1.MapRows(Oracle.ManagedDataAccess.Client.OracleDataReader)">
+            <summary>
+            After the reader is executed, this function is responsible for caling the factory for each row retrieved
+            </summary>
+            <param name="reader"></param>
+            <returns></returns>
+            <remarks>
+            Only in DEBUG mode, it ensures that all columns retrieved by the query have been accessed.
+            The finally block ensures that an exception has not been thrown and then proceeds to call <see cref="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.DebugCheck"/>.
+            http://stackoverflow.com/questions/2788793/how-to-get-the-current-exception-without-having-passing-the-variable
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Helpers.SqlBinder`1.DoMapRows(Oracle.ManagedDataAccess.Client.OracleDataReader,System.Func{EclipseLibrary.Oracle.Helpers.OracleDataRow2,`0})">
+            <summary>
+            After the reader is executed, this function is responsible for caling the factory for each row retrieved
+            </summary>
+            <param name="reader"></param>
+            <param name="factory"></param>
+            <returns></returns>
+            <remarks>
+            Only in DEBUG mode, it ensures that all columns retrieved by the query have been accessed.
+            The finally block ensures that an exception has not been thrown and then proceeds to call <see cref="M:EclipseLibrary.Oracle.Helpers.OracleDataRow2.DebugCheck"/>.
+            http://stackoverflow.com/questions/2788793/how-to-get-the-current-exception-without-having-passing-the-variable
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Helpers.SqlBinder`1.Factory">
+            <summary>
+            The factory can be set once via one of the <see cref="M:EclipseLibrary.Oracle.SqlBinder.Create"/> overloads.
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider">
+            <summary>
+            Tries to log into oracle with the passed user name and password.
+            Thus users need to be managed using oracle tools.
+            </summary>
+            <remarks>
+            You must specify the <c>connectionStringName</c> property in web.config to indicate which oracle
+            server should be used for authenticating users.
+            <code>
+            <![CDATA[
+                <membership defaultProvider="OracleMembershipProvider">
+             <providers>
+               <clear/>
+               <add name="OracleMembershipProvider" type="EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider"
+                  connectionStringName="dcms4" applicationName="DcmsWebMF" />
+             </providers>
+            </membership>
+            ]]>
+            </code>
+            <para>
+            The <c>User ID</c> specified in the connect string must have ALTER USER system privilege.
+            </para>
+            <para>
+            The connections created do not participate in connection pooling. This ensures that recently locked
+            or deleted users will not be able to authenticate.
+            </para>
+            <para>
+            Sharad 21 Oct 2010: Role cache is flushed each time the user logs in. See <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.ValidateUser(System.String,System.String)"/>.
+            </para>
+            <para>
+            Sharad 4 Jan 2012: ChangePassword logic corrected
+            </para>
+            <para>
+            For creating a new user one should logged in with required credentials. Following are the required grants. A new user will 
+            always be created with expiry password. Thinking behind this is that we are allowing user to create his/her own password.
+            </para>
+             <code>
+            <![CDATA[
+            GRANT CREATE USER TO <user-name>
+            ]]>
+            </code>
+            <para>
+            For deleting a user the logged in user must have the rights to drop a User. Following is the script for this.
+            </para>
+            <code>
+            <![CDATA[
+            GRANT DROP USER To <user-name>;
+            ]]>
+            </code>
+            <para>
+            For resetting a password or for un-locking an account of a user the logged user must have following rights.
+            </para>
+            <code>
+            <![CDATA[
+            GRANT ALTER USER TO <user-name>;
+            ]]>
+            </code>
+            </remarks>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider._proxyUsers">
+            <summary>
+            These proxy users will be granted CONNECT THROUGH rights when a new user is created.
+            </summary>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider._visibleProfiles">
+            <summary>
+            Users having one of these profiles will be visible to this provider. All other users will be invisible.
+            CreateUser grants the first profile to created users. 
+            DeleteUser will only delete users who have one of these profiles.
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.Initialize(System.String,System.Collections.Specialized.NameValueCollection)">
+            <summary>
+            Read <c>connectionStringName</c> and <c>applicationName</c>.
+            </summary>
+            <param name="name"></param>
+            <param name="config"></param>
+            <remarks>
+            Multiple values for <c>connectionStringName</c> can be specified, comma seperated. The first connection string is used for all operations. The proxy users of the subsequent
+            connection strings are used when a user is created. Each proxy user is granted connect through rights for the user.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.ValidateUser(System.String,System.String)">
+            <summary>
+            Returns true if we are able to successfully connect to oracle using the supplied username and password.
+            </summary>
+            <param name="username"></param>
+            <param name="password"></param>
+            <exception cref="T:System.Web.Security.MembershipPasswordException">Password has expired and needs to be changed before login can be allowed</exception>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.ChangePassword(System.String,System.String,System.String)">
+            <summary>
+            The password change will succeed only if the old password is valid.
+            </summary>
+            <param name="username"></param>
+            <param name="oldPassword"></param>
+            <param name="newPassword"></param>
+            <returns>true if password successfully changed. false if the old password is invalid</returns>
+            <remarks>
+            Any data base exception encountered will be propagated to the caller.
+            Sharad 15 Feb 2012: Supported voluntary changes of passwords. Earlier only expired passwords could be changed.
+            Sharad 21 Feb 2012: Raising ValidatingPassword event
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.GetUser(System.String,System.Boolean)">
+            <summary>
+            Returns full information about the passed user
+            </summary>
+            <param name="username"></param>
+            <param name="userIsOnline"></param>
+            <returns></returns>
+            <remarks>
+            The returned info contains audit log of the user as well
+            and also returned info contains session log of user.
+            Users who own schema objects are not visible to this function since our goal is to manage application users only. We do not want to manage
+            application owners.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.DoGetUserSessions(System.String,EclipseLibrary.Oracle.OracleDatastore)">
+            <summary>
+            This method return session log of user 
+            </summary>
+            <param name="username"></param>
+            <param name="db"></param>
+            <returns>
+            The returned info contains session log of the user as well.
+            </returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.DoGetUserAudit(System.String,EclipseLibrary.Oracle.OracleDatastore)">
+            <summary>
+            This method return audit log of user 
+            </summary>
+            <param name="username"></param>
+            <param name="db"></param>
+            <returns>
+            The returned info contains audit log of the user as well.
+            </returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.CreateUser(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.Object,System.Web.Security.MembershipCreateStatus@)">
+            <summary>
+            This function is for creating a new user.
+            </summary>
+            <param name="username"></param>
+            <param name="password"></param>
+            <param name="email">Ignored</param>
+            <param name="passwordQuestion">Ignored</param>
+            <param name="passwordAnswer">Ignored</param>
+            <param name="isApproved">Ignored</param>
+            <param name="providerUserKey">Ignored</param>
+            <param name="status">
+            <para>
+            Can return InvalidUserName, DuplicateUserName, InvalidPassword or Success
+            </para>
+            </param>
+            <returns>User object when <paramref name="status"/> = Success; null otherwise. </returns>
+            <remarks>
+            <para>
+            The user is always created with an expired password. The default profile is assigned to the user. CONNECT THROUGH rights are given to the proxy user.
+            </para>
+            <para>
+            The logged in user must have the rights to crete User. Following is the script.
+            </para>
+            <code>
+            <![CDATA[
+            GRANT CREATE USER TO <user-name> 
+            ]]>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.DeleteUser(System.String,System.Boolean)">
+            <summary>
+            This function is for deleting an existing user.
+            </summary>
+            <param name="username"></param>
+            <param name="deleteAllRelatedData">Ignored</param>
+            <returns>This function will return True if user successfully deleted else return False</returns>
+            <remarks>
+            <para>
+            The logged in user must have the rights to drop a User. Following is the script.
+            </para>
+            <code>
+            <![CDATA[
+            GRANT DROP USER To <user-name>;
+            ]]>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.UnlockUser(System.String)">
+             <summary>
+             This function is for un-locking a locked user account.
+             </summary>
+             <param name="userName"></param>
+             <remarks>
+             <para>
+             The logged in user must have the rights for resetting password of a user. Following is the script.
+             </para>
+             <code>
+             <![CDATA[
+             GRANT ALTER USER TO <user-name>;
+             ]]>
+             </code>
+            </remarks>
+             <returns>This function will return True on successful unlock else return False</returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.ResetPassword(System.String,System.String)">
+             <summary>
+             The password is changed to <paramref name="answer"/>. The password is set to expire immediately which will force the user to change password at next login.
+             </summary>
+             <param name="username">Name of the user need to reset password</param>
+             <param name="answer">The new password, or empty to randomply generate a password</param>
+             <returns>This function will return the new assigned password</returns>
+             <remarks>
+             <para>
+             The logged in user must have the rights for resetting password of a user. Following is the script.
+             </para>
+             <code>
+             <![CDATA[
+             GRANT ALTER USER TO <user-name>;
+             ]]>
+             </code>
+            </remarks>
+            
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.FindUsersByName(System.String,System.Int32,System.Int32,System.Int32@)">
+            <summary>
+            Returns all matching users who do not own any schema objects. Thus all users returned can potentially be deleted.
+            </summary>
+            <param name="usernameToMatch">This can contain the wildcard character %</param>
+            <param name="pageIndex">Not used</param>
+            <param name="pageSize">Not used</param>
+            <param name="totalRecords">Not used</param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.ChangePasswordQuestionAndAnswer(System.String,System.String,System.String,System.String)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="username"></param>
+            <param name="password"></param>
+            <param name="newPasswordQuestion"></param>
+            <param name="newPasswordAnswer"></param>
+            <exception cref="T:System.NotImplementedException"></exception>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.FindUsersByEmail(System.String,System.Int32,System.Int32,System.Int32@)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="emailToMatch"></param>
+            <param name="pageIndex"></param>
+            <param name="pageSize"></param>
+            <param name="totalRecords"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.GetAllUsers(System.Int32,System.Int32,System.Int32@)">
+            <summary>
+            Returns all users. Sessions and audit is not returned.
+            </summary>
+            <param name="pageIndex"></param>
+            <param name="pageSize"></param>
+            <param name="totalRecords"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.GetNumberOfUsersOnline">
+            <summary>
+            NotImplementedException
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.GetPassword(System.String,System.String)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="username"></param>
+            <param name="answer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.GetUser(System.Object,System.Boolean)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="providerUserKey"></param>
+            <param name="userIsOnline"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.GetUserNameByEmail(System.String)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="email"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.UpdateUser(System.Web.Security.MembershipUser)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="user"></param>
+            <exception cref="T:System.NotImplementedException"></exception>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.ApplicationName">
+            <summary>
+            Not used
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.EnablePasswordReset">
+            <summary>
+            We allow resetting of password
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.EnablePasswordRetrieval">
+            <summary>
+            Not possible to retrieve password
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.MaxInvalidPasswordAttempts">
+            <summary>
+            NotImplementedException
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.MinRequiredNonAlphanumericCharacters">
+            <summary>
+            We do not worry about password strength
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.MinRequiredPasswordLength">
+            <summary>
+            Password cannot be empty
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.PasswordAttemptWindow">
+            <summary>
+            NotImplementedException
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.PasswordFormat">
+            <summary>
+            NotImplementedException
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.PasswordStrengthRegularExpression">
+            <summary>
+            NotImplementedException
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.RequiresQuestionAndAnswer">
+            <summary>
+            We do not care about secret questions
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider.RequiresUniqueEmail">
+            <summary>
+            We have no use for emails
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.ActionName">
+            <summary>
+            What action was performed on this user
+            </summary>
+            <remarks>
+            One of 'CREATE USER', 'DROP USER', 'ALTER USER', 'GRANT ROLE', 'REVOKE ROLE'
+            </remarks>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.RoleName">
+            <summary>
+            Which role was granted or revoked. This is always NULL for non role related actions.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.Result">
+            <summary>
+            Action was sucess and failure?
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.ActionTime">
+            <summary>
+            When was this action performed
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.ByOracleUserName">
+            <summary>
+            Which oracle user performed this action
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.ByOsUserName">
+            <summary>
+            Which OS User performed this action
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserAudit.TerminalName">
+            <summary>
+            Which windows terminal was used to perform this action
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.OsExecutableName">
+            <summary>
+            Which program is used to log in.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.IsActive">
+            <summary>
+            This property is use for give the status of loged in user.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.OsUserName">
+            <summary>
+            Which OS User performed this action.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.MachineName">
+            <summary>
+            Which machine was used to perform this action.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.Module">
+            <summary>
+            Which module was used by user. 
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.ActionName">
+            <summary>
+            What action was performed on this user.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.ClientInfo">
+            <summary>
+            This property is use to give client information.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.LogonTime">
+            <summary>
+            When user loged in.
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleMembershipUserSession.State">
+            <summary>
+            This property shows state of logged in user
+            </summary>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.Web.Security.OracleMembershipUser._providerUserKey">
+            <summary>
+            User Id
+            </summary>
+        </member>
+        <member name="T:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider">
+             <summary>
+             4 Apr: Caching the roles in memory.
+             </summary>
+             <remarks>
+             <para>
+             This provider can return roles for any user <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.GetRolesForUser(System.String)"/>. It can add roles to a user <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.AddUsersToRoles(System.String[],System.String[])"/>
+             or remove roles from a user <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.RemoveUsersFromRoles(System.String[],System.String[])"/>. It can tell whether a role exists <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.RoleExists(System.String)"/>. For a given role,
+             it can return users having that role <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.GetUsersInRole(System.String)"/>.
+             </para>
+             <para>
+             A role can be an oracle role or a user privilege defined in the table <c>upriv</c>. Functions which return roles for a user look at the upriv table
+             and return all privileges for the user as well. Functions which add or remove roles from a user, first check whether the passed role is a privilege by
+             looking at the <c>priv</c> table. If it turns out to be a privilege, then adding means that a row is inserted in the <c>upriv</c> table amd removing means removing row
+             from the upriv table. If it is not a privilege, then an oracle role is granted or removed.
+             </para>
+             <para>
+             Indirectly granted oracle roles are detected and are returned in the list of user roles. All roles are returned in upper case. Passed roles are converted to upper case
+             before they are looked at.
+             </para>
+             <para>
+             Role querying functions retrieve information using the proxy user rights. Granting and revoking functions work under the context of the currently logged in user.
+             The logged in user must have these oracle privileges to be able to grant and revoke roles.
+             </para>
+             <code>
+             <![CDATA[
+             grant GRANT ANY ROLE to <user-name>
+             grant select, insert, delete on UPRIV to <user-name>;
+             grant select on PRIV to <user-name>;
+             ]]>
+             </code>
+             <para>
+             12 Oct 2010: Each privilege specified in table upriv is treated as a role. If the upriv table does not exist,
+             no error is raised. All retrieved roles are cached for 30 minutes. Therefore it is recommended that <c>cacheRolesInCookie</c>
+             should always be set to false as shown below.
+             </para>
+             <code>
+             <![CDATA[
+            <roleManager defaultProvider="OracleProvider" enabled="true" cacheRolesInCookie="false">
+                <providers>
+                <clear />
+                <add name="OracleProvider" type="EclipseLibrary.Oracle.Web.Security.OracleRoleProvider" connectStringName="dcms8" />
+                </providers>
+            </roleManager>
+             ]]>
+             </code>
+             <para>
+             GL - 21 Oct 2010: The cached roles to the logged - in  user is cleared in the <see cref="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.ClearRoleCache(System.String)"/>.
+             </para>
+             <para>
+             Sharad 12 Dec 2011: If the user whose roles are being requested is the same as the proxy user, then the only role returned is WEB_PROXYUSER.
+             Authorization code can check for this role and decide to unconditionally authorize the request, thereby treating the proxy user as the super user.
+             AuthorizeExAttribute takes advantage of this.
+             </para>
+             </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider._connectionStringBuilder">
+            <summary>
+            This contains the connection string which refers to the proxy user. It should never be modified by any function.
+            </summary>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.MAX_CACHE_DURATION">
+            <summary>
+            How long before the cached roles should be discarded
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.Initialize(System.String,System.Collections.Specialized.NameValueCollection)">
+            <summary>
+            Read <c>connectStringName</c> and <c>applicationName</c>
+            </summary>
+            <param name="name"></param>
+            <param name="config"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.GetRolesForUser(System.String)">
+            <summary>
+            Returns all roles assigned to the passed user
+            </summary>
+            <param name="username"></param>
+            <returns>Array of roles</returns>
+            <remarks>
+            <para>
+            Roles assigned to roles are also properly handled
+            </para>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.GetUsersInRole(System.String)">
+            <summary>
+            Following function will return all users that are assigned with the passed role.  
+            </summary>
+            <param name="roleName"></param>
+            <returns>Array of roles</returns>
+            <remarks>
+            Users who own schema objects are not returned by this function.
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.IsUserInRole(System.String,System.String)">
+            <summary>
+            This function will inform whether the passed user is having the passed role.
+            If yes then the function will return true else return false.
+            </summary>
+            <param name="username"></param>
+            <param name="roleName"></param>
+            <returns>boolean</returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.RoleExists(System.String)">
+            <summary>
+            This function is for checking whether the passed role exists or not.
+            </summary>
+            <param name="roleName"></param>
+            <exception cref="T:System.NotImplementedException"></exception>
+            <returns>boolean</returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.AddUsersToRoles(System.String[],System.String[])">
+            <summary>
+            This function is for granting the passed roles to the passed users.
+            </summary>
+            <param name="usernames"></param>
+            <param name="roleNames"></param>
+            <remarks>
+            <para>
+            The logged in user must have the rights to add roles. The logged in user must also have the insert rights to add upriv.
+            Following are the scripts.
+            </para>
+            <code>
+            <![CDATA[
+            grant GRANT ANY ROLE to <user-name>
+            grant INSERT on URPIV to <user-name>
+            ]]>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.RemoveUsersFromRoles(System.String[],System.String[])">
+            <summary>
+            This function is for revoking the passed roles from the passed users.
+            </summary>
+            <param name="usernames"></param>
+            <param name="roleNames"></param>
+            <remarks>
+            <para>
+            Empty user names and roles are silently ignored. All user names and roles are converted to upper case before they are processed.
+            </para>
+            <para>
+            The logged in user must have the rights to revoke roles. The logged in user must also have the delete rights on table upriv to delete user's priv.
+            Follwing are the scripts.
+            </para>
+            <code>
+            <![CDATA[
+            grant GRANT ANY ROLE to <user-name>
+            grant DELETE on URPIV to <user-name>
+            ]]>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.FindUsersInRole(System.String,System.String)">
+            <summary>
+            This function is for getting users in the passed role.
+            </summary>
+            <param name="roleName"></param>
+            <param name="usernameToMatch"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.ClearRoleCache(System.String)">
+            <summary>
+            Called by <see cref="T:EclipseLibrary.Oracle.Web.Security.OracleMembershipProvider"/> whenever a user tries to log in
+            </summary>
+            <param name="username"></param>
+        </member>
+        <member name="F:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider._privTablesExist">
+            <summary>
+            This becomes false if we ever encounter table not exists error. Then it stays false. It helps us in avoiding queries if the table does not exist
+            </summary>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.IsRolePriv(System.String)">
+            <summary>
+            This function is for checking whether the passed role is a priv.
+            </summary>
+            <param name="roleName"></param>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.CreateRole(System.String)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="roleName"></param>
+            <exception cref="T:System.NotImplementedException"></exception>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.DeleteRole(System.String,System.Boolean)">
+            <summary>
+            NotImplementedException
+            </summary>
+            <param name="roleName"></param>
+            <param name="throwOnPopulatedRole"></param>
+            <returns></returns>
+        </member>
+        <member name="M:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.GetAllRoles">
+            <summary>
+            NotImplementedException
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.ApplicationName">
+            <summary>
+            Not used
+            </summary>
+        </member>
+        <member name="P:EclipseLibrary.Oracle.Web.Security.OracleRoleProvider.RoleCache.TimeStamp">
+            <summary>
+            When was the role info retrieved
+            </summary>
+        </member>
+    </members>
+</doc>

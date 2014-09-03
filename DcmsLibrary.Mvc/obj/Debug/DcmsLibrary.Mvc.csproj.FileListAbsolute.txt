@@ -7,7 +7,6 @@ C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.dll
 C:\work\DcmsMobile\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.pdb
 C:\work\github\second-test\DcmsLibrary.Mvc\bin\Debug\DcmsLibrary.Mvc.dll
 C:\work\github\second-test\DcmsLibrary.Mvc\bin\Debug\DcmsLibrary.Mvc.pdb
-C:\work\github\second-test\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.csprojResolveAssemblyReference.cache
 C:\work\github\second-test\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.Resources.resources
 C:\work\github\second-test\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.csproj.GenerateResource.Cache
 C:\work\github\second-test\DcmsLibrary.Mvc\obj\Debug\DcmsLibrary.Mvc.dll
